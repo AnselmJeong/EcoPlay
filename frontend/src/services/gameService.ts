@@ -141,13 +141,103 @@ export const savePublicGoodsResult = async (gameResult: Omit<PublicGoodsResult, 
   }
 };
 
+// 특정 사용자의 공공재 게임 결과 조회 (10라운드)
+export const getPublicGoodsHistory = async (medicalRecordNumber: string) => {
+  try {
+    console.log('공공재 게임 조회 시작, 사용자:', medicalRecordNumber);
+    
+    const q = query(
+      collection(db, COLLECTIONS.PUBLIC_GOODS),
+      where('user_id', '==', medicalRecordNumber)
+      // orderBy를 제거하여 인덱스 문제 해결
+    );
+    
+    const querySnapshot = await getDocs(q);
+    console.log('공공재 게임 쿼리 결과:', querySnapshot.size, '개 문서');
+    
+    const results = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('공공재 게임 문서 데이터:', data);
+      return {
+        round: data.round,
+        donation: data.human_contribution,
+        current_balance: data.human_payoff,
+        partner_contribution: data.computer_contributions?.reduce((sum: number, val: number) => sum + val, 0) || 0,
+        timestamp: data.timestamp
+      };
+    });
+    
+    // 클라이언트에서 정렬
+    results.sort((a, b) => a.round - b.round);
+    
+    console.log('공공재 게임 최종 결과:', results);
+    return results;
+  } catch (error) {
+    console.error('공공재 게임 조회 오류:', error);
+    throw new Error('공공재 게임 결과 조회에 실패했습니다.');
+  }
+};
+
+// 특정 사용자의 신뢰 게임 결과 조회 (역할별)
+export const getTrustGameHistory = async (medicalRecordNumber: string, role: 'trustor' | 'trustee') => {
+  try {
+    console.log('신뢰 게임 조회 시작, 사용자:', medicalRecordNumber, '역할:', role);
+    
+    const q = query(
+      collection(db, COLLECTIONS.TRUST_GAME),
+      where('user_id', '==', medicalRecordNumber),
+      where('role', '==', role)
+      // orderBy를 제거하여 인덱스 문제 해결
+    );
+    
+    const querySnapshot = await getDocs(q);
+    console.log('신뢰 게임 쿼리 결과:', querySnapshot.size, '개 문서');
+    
+    const results = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('신뢰 게임 문서 데이터:', data);
+      
+      if (role === 'trustor') {
+        // trustor는 trustee 역할 (투자하는 사람)
+        return {
+          round: data.round,
+          investment: data.decision,
+          received_amount: data.received_amount,
+          return_amount: data.decision, // 투자 금액
+          current_balance: data.received_amount - data.decision, // 순수익
+          timestamp: data.timestamp
+        };
+      } else {
+        // trustee는 receiver 역할 (돌려주는 사람)
+        return {
+          round: data.round,
+          investment: data.received_amount,
+          received_amount: data.received_amount,
+          return_amount: data.decision,
+          current_balance: data.received_amount - data.decision, // 받은 것에서 돌려준 것 뺀 순수익
+          timestamp: data.timestamp
+        };
+      }
+    });
+    
+    // 클라이언트에서 정렬
+    results.sort((a, b) => a.round - b.round);
+    
+    console.log('신뢰 게임 최종 결과:', results);
+    return results;
+  } catch (error) {
+    console.error('신뢰 게임 조회 오류:', error);
+    throw new Error('신뢰 게임 결과 조회에 실패했습니다.');
+  }
+};
+
 // 특정 사용자의 게임 결과 조회
 export const getUserGameResults = async (medicalRecordNumber: string) => {
   try {
     // 신뢰 게임 결과 조회
     const trustGameQuery = query(
       collection(db, COLLECTIONS.TRUST_GAME),
-      where('medicalRecordNumber', '==', medicalRecordNumber),
+      where('user_id', '==', medicalRecordNumber),
       orderBy('timestamp', 'desc')
     );
     const trustGameSnapshot = await getDocs(trustGameQuery);
@@ -159,7 +249,7 @@ export const getUserGameResults = async (medicalRecordNumber: string) => {
     // 공공재 게임 결과 조회
     const publicGoodsQuery = query(
       collection(db, COLLECTIONS.PUBLIC_GOODS),
-      where('medicalRecordNumber', '==', medicalRecordNumber),
+      where('user_id', '==', medicalRecordNumber),
       orderBy('timestamp', 'desc')
     );
     const publicGoodsSnapshot = await getDocs(publicGoodsQuery);
@@ -200,25 +290,103 @@ export const getGameProgress = async (medicalRecordNumber: string) => {
       trustGame: {
         completed: trustGameRounds,
         total: expectedTrustRounds,
-        percentage: Math.round((trustGameRounds / expectedTrustRounds) * 100)
+        percentage: Math.min((trustGameRounds / expectedTrustRounds) * 100, 100)
       },
       publicGoods: {
         completed: publicGoodsRounds,
         total: expectedPublicGoodsRounds,
-        percentage: Math.round((publicGoodsRounds / expectedPublicGoodsRounds) * 100)
-      },
-      overall: {
-        completed: trustGameRounds + publicGoodsRounds,
-        total: expectedTrustRounds + expectedPublicGoodsRounds,
-        percentage: Math.round(((trustGameRounds + publicGoodsRounds) / (expectedTrustRounds + expectedPublicGoodsRounds)) * 100)
+        percentage: Math.min((publicGoodsRounds / expectedPublicGoodsRounds) * 100, 100)
       }
     };
   } catch (error) {
     console.error('게임 진행률 계산 오류:', error);
+    throw new Error('게임 진행률 계산에 실패했습니다.');
+  }
+};
+
+// 디버깅: 모든 데이터 구조 확인
+export const debugGetAllData = async () => {
+  try {
+    console.log('=== 모든 데이터 조회 시작 ===');
+    
+    // Public Goods 전체 데이터 조회
+    const pgQuery = query(collection(db, COLLECTIONS.PUBLIC_GOODS));
+    const pgSnapshot = await getDocs(pgQuery);
+    console.log('Public Goods 전체 문서 수:', pgSnapshot.size);
+    
+    const pgDocs = pgSnapshot.docs.slice(0, 5); // 최대 5개만 확인
+    pgDocs.forEach((doc, index) => {
+      console.log(`Public Goods 문서 ${index + 1}:`, doc.data());
+    });
+    
+    // Trust Game 전체 데이터 조회
+    const tgQuery = query(collection(db, COLLECTIONS.TRUST_GAME));
+    const tgSnapshot = await getDocs(tgQuery);
+    console.log('Trust Game 전체 문서 수:', tgSnapshot.size);
+    
+    const tgDocs = tgSnapshot.docs.slice(0, 5); // 최대 5개만 확인
+    tgDocs.forEach((doc, index) => {
+      console.log(`Trust Game 문서 ${index + 1}:`, doc.data());
+    });
+    
+    // 모든 user_id 수집
+    const allUserIds = new Set();
+    pgSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.user_id) allUserIds.add(data.user_id);
+    });
+    tgSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.user_id) allUserIds.add(data.user_id);
+    });
+    
+    console.log('Firebase에 저장된 모든 user_id:', Array.from(allUserIds));
+    console.log('=== 모든 데이터 조회 완료 ===');
+    
     return {
-      trustGame: { completed: 0, total: 10, percentage: 0 },
-      publicGoods: { completed: 0, total: 10, percentage: 0 },
-      overall: { completed: 0, total: 20, percentage: 0 }
+      publicGoodsCount: pgSnapshot.size,
+      trustGameCount: tgSnapshot.size,
+      allUserIds: Array.from(allUserIds)
     };
+  } catch (error) {
+    console.error('디버깅 데이터 조회 오류:', error);
+    return null;
+  }
+};
+
+// 특정 사용자의 동의서 데이터 확인
+export const checkConsentData = async (medicalRecordNumber: string) => {
+  try {
+    console.log('동의서 데이터 확인 시작, 사용자:', medicalRecordNumber);
+    
+    const q = query(
+      collection(db, COLLECTIONS.CONSENT),
+      where('user_id', '==', medicalRecordNumber)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    console.log('동의서 쿼리 결과:', querySnapshot.size, '개 문서');
+    
+    if (querySnapshot.size > 0) {
+      const consentData = querySnapshot.docs[0].data();
+      console.log('동의서 데이터:', consentData);
+      
+      return {
+        exists: true,
+        consentGiven: consentData.consent_given,
+        consentTimestamp: consentData.consent_timestamp,
+        consentDetails: consentData.consent_details
+      };
+    }
+    
+    return {
+      exists: false,
+      consentGiven: false,
+      consentTimestamp: null,
+      consentDetails: null
+    };
+  } catch (error) {
+    console.error('동의서 데이터 확인 오류:', error);
+    throw new Error('동의서 데이터 확인에 실패했습니다.');
   }
 }; 

@@ -8,6 +8,7 @@ import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { checkConsentData } from '@/services/gameService';
 
 
 export default function LandingPage() {
@@ -15,8 +16,32 @@ export default function LandingPage() {
   const { user, logout, loading, getMedicalRecordNumber, isPasswordDefault } = useAuth();
   const router = useRouter();
 
-  const handleAuthSuccess = () => {
-    router.push('/consent');
+  const handleAuthSuccess = async () => {
+    // 로그인 성공 후 동의서 데이터 확인
+    const medicalRecordNumber = getMedicalRecordNumber();
+    if (!medicalRecordNumber) {
+      console.error('병록번호를 가져올 수 없습니다.');
+      router.push('/consent');
+      return;
+    }
+
+    try {
+      const consentData = await checkConsentData(medicalRecordNumber);
+      
+      if (consentData.exists && consentData.consentGiven) {
+        // 이미 동의서를 작성했으면 바로 게임 페이지로
+        console.log('동의서 이미 완료됨, /games로 이동');
+        router.push('/games');
+      } else {
+        // 동의서를 작성하지 않았으면 동의서 페이지로
+        console.log('동의서 미완료, /consent로 이동');
+        router.push('/consent');
+      }
+    } catch (error) {
+      console.error('동의서 확인 오류:', error);
+      // 오류가 발생하면 안전하게 동의서 페이지로 이동
+      router.push('/consent');
+    }
   };
 
   const handleResearchParticipation = async () => {
@@ -31,8 +56,22 @@ export default function LandingPage() {
           // 기본 비밀번호라면 비밀번호 변경을 위해 모달 열기
           setIsAuthModalOpen(true);
         } else {
-          // 이미 비밀번호를 변경했다면 바로 동의서 페이지로
-          router.push('/consent');
+          // 이미 비밀번호를 변경했다면 동의서 확인 후 적절한 페이지로 이동
+          try {
+            const consentData = await checkConsentData(medicalRecordNumber);
+            
+            if (consentData.exists && consentData.consentGiven) {
+              // 이미 동의서를 작성했으면 바로 게임 페이지로
+              router.push('/games');
+            } else {
+              // 동의서를 작성하지 않았으면 동의서 페이지로
+              router.push('/consent');
+            }
+          } catch (error) {
+            console.error('동의서 확인 오류:', error);
+            // 오류가 발생하면 안전하게 동의서 페이지로 이동
+            router.push('/consent');
+          }
         }
       } else {
         // 병록번호를 가져올 수 없으면 모달 열기

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Coins, LogOut, User } from 'lucide-react';
+import { Coins, LogOut, User, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -27,6 +27,10 @@ export default function Header() {
         {/* 인증된 사용자 정보 표시 */}
         {user && (
           <div className="flex items-center gap-4">
+            <Link href="/report" className="flex items-center gap-2 hover:text-accent transition-colors">
+              <BarChart3 className="h-5 w-5" />
+              <span className="font-medium">게임 결과</span>
+            </Link>
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4" />
               <span>병록번호: {getMedicalRecordNumber()}</span>

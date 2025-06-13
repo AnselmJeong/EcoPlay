@@ -208,6 +208,7 @@ export default function TrustGameTrusteePage() {
     "시작 잔액은 10포인트입니다.",
     `${NUM_OPPONENTS}명의 다른 상대와 각각 ${ROUNDS_PER_OPPONENT}라운드씩 플레이합니다 (총 ${TOTAL_ROUNDS}라운드).`,
     "매 라운드에서 현재 잔액의 0~50%까지 투자할 수 있습니다.",
+    "잔액이 0이 되어도 최대 5포인트까지 투자 가능합니다 (부활 기회 제공).",
     "투자 금액은 3배로 증가하여 상대방(수신자)에게 전달됩니다.",
     "수신자는 받은 금액 중 일부를 당신에게 돌려줍니다.",
     "목표: 상대방의 신뢰성을 파악하고 현명하게 투자하여 포인트를 최대화하세요."
@@ -216,7 +217,10 @@ export default function TrustGameTrusteePage() {
 
 
   useEffect(() => {
-    setMaxInvestment(Math.floor(playerBalance / 2));
+    // 현재 잔액의 50%와 최소 투자액 5포인트 중 큰 값을 설정
+    const regularMaxInvestment = Math.floor(playerBalance / 2);
+    const minimumInvestment = 5;
+    setMaxInvestment(Math.max(regularMaxInvestment, minimumInvestment));
   }, [playerBalance]);
 
   const handleSubmit = async () => {
@@ -244,7 +248,9 @@ export default function TrustGameTrusteePage() {
       const returnRate = currentOpponent ? 
         (Math.random() * (currentOpponent.return_rate_range[1] - currentOpponent.return_rate_range[0]) + currentOpponent.return_rate_range[0]) / 100 
         : 0.5;
-      const receivedBack = Math.floor(sentAmount * returnRate);
+      // 투자한 경우 최소 1포인트는 돌려받도록 보장 (신뢰 게임의 기본 룰)
+      const calculatedReturn = Math.round(sentAmount * returnRate);
+      const receivedBack = investmentAmount > 0 ? Math.max(1, calculatedReturn) : 0;
       const newBalance = playerBalance - investmentAmount + receivedBack;
 
       // Firebase에 게임 결과 저장
@@ -277,7 +283,7 @@ export default function TrustGameTrusteePage() {
       
       toast({
         title: `라운드 ${currentOverallRound} 완료!`,
-        description: `새로운 잔액: ${newBalance}포인트`,
+        description: `새로운 잔액: ${newBalance}포인트${newBalance < 0 ? ' (마이너스지만 계속 투자 가능!)' : ''}`,
       });
 
       if (currentOverallRound >= TOTAL_ROUNDS) {
@@ -411,7 +417,14 @@ export default function TrustGameTrusteePage() {
               <div className="mt-6 w-full max-w-md mx-auto space-y-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600 mb-2">{playerBalance}포인트</div>
-                  <p className="text-sm text-gray-600">현재 잔액 (최대 투자: {maxInvestment}포인트)</p>
+                  <p className="text-sm text-gray-600">
+                    현재 잔액 (최대 투자: {maxInvestment}포인트)
+                    {playerBalance <= 10 && maxInvestment === 5 && (
+                      <span className="block text-orange-600 font-medium mt-1">
+                        🚀 부활 기회: 최대 5포인트까지 투자 가능!
+                      </span>
+                    )}
+                  </p>
                 </div>
                 
                 <div className="space-y-4">

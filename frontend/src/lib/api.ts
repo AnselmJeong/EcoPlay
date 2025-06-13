@@ -110,4 +110,25 @@ export const messageAPI = {
       body: JSON.stringify({ message_id: messageId, helpful }),
     });
   },
+};
+
+// Report API
+export const reportAPI = {
+  getGameReport: async (gameType?: string) => {
+    const query = gameType ? `?game_type=${gameType}` : '';
+    return apiCall(`/report/games${query}`);
+  },
+  
+  getPublicGoodsReport: async () => {
+    return apiCall('/report/public-goods');
+  },
+  
+  getTrustGameReport: async (role?: string) => {
+    const query = role ? `?role=${role}` : '';
+    return apiCall(`/report/trust-game${query}`);
+  },
+  
+  getAllGamesReport: async () => {
+    return apiCall('/report/all');
+  },
 }; 

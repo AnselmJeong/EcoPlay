@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, UserPlus, LogIn, Eye, EyeOff, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { checkConsentData } from '@/services/gameService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  const { login, register, changePassword, user, isPasswordDefault } = useAuth();
+  const { login, register, changePassword, user, isPasswordDefault, getMedicalRecordNumber } = useAuth();
   const { toast } = useToast();
 
   const resetForm = () => {
@@ -82,13 +83,38 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         setBirthDate('');
         setActiveTab('changePassword');
       } else {
-        // 이미 비밀번호를 변경한 경우 바로 연구로 진행
-        toast({
-          title: "로그인 성공",
-          description: "연구 참여 페이지로 이동합니다.",
-        });
-        handleClose();
-        onSuccess?.();
+        // 이미 비밀번호를 변경한 경우 동의서 확인
+        try {
+          const consentData = await checkConsentData(medicalRecordNumber);
+          
+          if (consentData.exists && consentData.consentGiven) {
+            // 이미 동의서를 작성했으면 바로 게임 페이지로
+            toast({
+              title: "로그인 성공",
+              description: "게임 페이지로 이동합니다.",
+            });
+            handleClose();
+            // 동의서가 이미 완료된 경우 games 페이지로 직접 이동
+            window.location.href = '/games';
+          } else {
+            // 동의서를 작성하지 않았으면 동의서 페이지로
+            toast({
+              title: "로그인 성공",
+              description: "동의서 작성 페이지로 이동합니다.",
+            });
+            handleClose();
+            onSuccess?.();
+          }
+        } catch (error) {
+          console.error('동의서 확인 오류:', error);
+          // 오류가 발생하면 안전하게 동의서 페이지로 이동
+          toast({
+            title: "로그인 성공",
+            description: "연구 참여 페이지로 이동합니다.",
+          });
+          handleClose();
+          onSuccess?.();
+        }
       }
     } catch (error: any) {
       toast({
@@ -155,12 +181,49 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
     try {
       await changePassword(currentPassword, newPassword);
-      handleClose();
-      onSuccess?.(); // 비밀번호 변경 완료 후 연구 진행
-      toast({
-        title: "비밀번호 변경 완료",
-        description: "비밀번호가 성공적으로 변경되었습니다.",
-      });
+      
+      // 비밀번호 변경 완료 후 동의서 확인
+      const medicalRecordNumber = getMedicalRecordNumber();
+      if (medicalRecordNumber) {
+        try {
+          const consentData = await checkConsentData(medicalRecordNumber);
+          
+          if (consentData.exists && consentData.consentGiven) {
+            // 이미 동의서를 작성했으면 바로 게임 페이지로
+            handleClose();
+            window.location.href = '/games';
+            toast({
+              title: "비밀번호 변경 완료",
+              description: "게임 페이지로 이동합니다.",
+            });
+          } else {
+            // 동의서를 작성하지 않았으면 동의서 페이지로
+            handleClose();
+            onSuccess?.();
+            toast({
+              title: "비밀번호 변경 완료",
+              description: "동의서 작성 페이지로 이동합니다.",
+            });
+          }
+        } catch (error) {
+          console.error('동의서 확인 오류:', error);
+          // 오류가 발생하면 안전하게 동의서 페이지로 이동
+          handleClose();
+          onSuccess?.();
+          toast({
+            title: "비밀번호 변경 완료",
+            description: "비밀번호가 성공적으로 변경되었습니다.",
+          });
+        }
+      } else {
+        // 병록번호를 가져올 수 없으면 안전하게 동의서 페이지로
+        handleClose();
+        onSuccess?.();
+        toast({
+          title: "비밀번호 변경 완료",
+          description: "비밀번호가 성공적으로 변경되었습니다.",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "비밀번호 변경 실패",

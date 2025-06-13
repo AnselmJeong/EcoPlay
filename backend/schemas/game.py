@@ -13,7 +13,7 @@ class PublicGoodsGameRound(BaseModel):
 class TrustGameRound(BaseModel):
     user_id: str
     round: int
-    role: str  # 'receiver' or 'trustee'
+    role: str  # 'trustor' or 'trustee'
     investment: Optional[int] = None
     returned: Optional[int] = None
     payoff: float
@@ -28,12 +28,12 @@ class PublicGoodsGameRequest(BaseModel):
 
 class TrustGameRequest(BaseModel):
     round: int
-    role: str  # 'receiver' or 'trustee'
+    role: str  # 'trustor' or 'trustee'
     current_balance: float
-    # For receiver
+    # For trustee (받아서 돌려주는 사람)
     received_amount: Optional[int] = None
     return_amount: Optional[int] = None
-    # For trustee
+    # For trustor (투자하는 사람)
     investment: Optional[int] = None
 
 

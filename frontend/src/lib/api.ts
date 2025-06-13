@@ -1,16 +1,32 @@
+import { auth } from '@/lib/firebase';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Firebase Auth 토큰 가져오기 함수
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      return await user.getIdToken();
+    }
+    return null;
+  } catch (error) {
+    console.error('토큰 가져오기 실패:', error);
+    return null;
+  }
+}
 
 // API 호출을 위한 기본 함수
 async function apiCall(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
-  // Firebase Auth 토큰 가져오기 (실제 구현에서는 Firebase Auth 사용)
-  // const token = await getAuthToken();
+  // Firebase Auth 토큰 가져오기
+  const token = await getAuthToken();
   
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}`,
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
@@ -130,5 +146,54 @@ export const reportAPI = {
   
   getAllGamesReport: async () => {
     return apiCall('/report/all');
+  },
+};
+
+// Consent API
+export const consentAPI = {
+  submitConsent: async (data: {
+    medicalRecordNumber: string;
+    consentGiven: boolean;
+    consentDetails: {
+      researchParticipation: boolean;
+      dataCollection: boolean;
+      dataSharing: boolean;
+      contactPermission: boolean;
+    };
+  }) => {
+    return apiCall('/consent/submit', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  
+  checkConsent: async (medicalRecordNumber: string) => {
+    return apiCall(`/consent/check/${medicalRecordNumber}`);
+  },
+  
+  getConsentList: async () => {
+    return apiCall('/consent/list');
+  },
+  
+  updateConsent: async (documentId: string, data: {
+    medicalRecordNumber: string;
+    consentGiven: boolean;
+    consentDetails: {
+      researchParticipation: boolean;
+      dataCollection: boolean;
+      dataSharing: boolean;
+      contactPermission: boolean;
+    };
+  }) => {
+    return apiCall(`/consent/update/${documentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  
+  deleteConsent: async (documentId: string) => {
+    return apiCall(`/consent/delete/${documentId}`, {
+      method: 'DELETE',
+    });
   },
 }; 

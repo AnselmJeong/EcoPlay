@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getPublicGoodsHistory, getTrustGameHistory, debugGetAllData } from '@/services/gameService';
+import { reportAPI } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface GameData {
@@ -53,40 +53,38 @@ export default function ReportPage() {
       const medicalRecordNumber = getMedicalRecordNumber();
       console.log('Medical Record Number:', medicalRecordNumber);
       
-      // 디버깅: Firebase 전체 데이터 구조 확인
-      await debugGetAllData();
-      
       if (!medicalRecordNumber) {
         throw new Error('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
       }
 
-      // Firebase에서 실제 게임 데이터 가져오기
-      console.log('Firebase에서 데이터 조회 시작...');
+      // 백엔드 API에서 게임 데이터 가져오기
+      console.log('백엔드 API에서 데이터 조회 시작...');
       
       try {
-        const pgData = await getPublicGoodsHistory(medicalRecordNumber);
-        console.log('Public Goods Data:', pgData);
-        setPublicGoodsData(pgData);
+        const pgReport = await reportAPI.getPublicGoodsReport();
+        console.log('Public Goods Report:', pgReport);
+        setPublicGoodsData(pgReport.rounds || []);
       } catch (pgError) {
         console.error('Public Goods 데이터 조회 오류:', pgError);
         setPublicGoodsData([]);
       }
 
       try {
-        const tgReceiverData = await getTrustGameHistory(medicalRecordNumber, 'trustee');
-        console.log('Trust Game Receiver Data:', tgReceiverData);
-        setTrustGameReceiverData(tgReceiverData);
+        const tgReport = await reportAPI.getTrustGameReport();
+        console.log('Trust Game Report:', tgReport);
+        
+        // 역할별로 데이터 분리 - Firebase role 기준
+        const trusteeGameData = tgReport.rounds?.filter((round: any) => round.role === 'trustee') || [];
+        const trustorGameData = tgReport.rounds?.filter((round: any) => round.role === 'trustor') || [];
+        
+        console.log('Trustee Game Data (User는 Trustee):', trusteeGameData.length);
+        console.log('Trustor Game Data (User는 Trustor):', trustorGameData.length);
+        
+        setTrustGameReceiverData(trusteeGameData);  // User가 Trustee인 게임 (10라운드)
+        setTrustGameTrusteeData(trustorGameData);   // User가 Trustor인 게임 (40라운드)
       } catch (tgError) {
-        console.error('Trust Game Receiver 데이터 조회 오류:', tgError);
+        console.error('Trust Game 데이터 조회 오류:', tgError);
         setTrustGameReceiverData([]);
-      }
-
-      try {
-        const tgTrusteeData = await getTrustGameHistory(medicalRecordNumber, 'trustor');
-        console.log('Trust Game Trustee Data:', tgTrusteeData);
-        setTrustGameTrusteeData(tgTrusteeData);
-      } catch (tgError) {
-        console.error('Trust Game Trustee 데이터 조회 오류:', tgError);
         setTrustGameTrusteeData([]);
       }
 
@@ -103,15 +101,15 @@ export default function ReportPage() {
     if (publicGoodsData.length === 0) return [];
     
     const avgDonation = publicGoodsData.reduce((sum, d) => sum + (d.donation || 0), 0) / publicGoodsData.length;
-    const avgPartnerContrib = publicGoodsData.reduce((sum, d) => sum + (d.partner_contribution || 0), 0) / publicGoodsData.length;
+    const avgPartnerContrib = publicGoodsData.reduce((sum, d) => sum + (d.partner_contribution || 0), 0) / publicGoodsData.length / 4;
     const totalEarnings = publicGoodsData.reduce((sum, d) => sum + (d.current_balance || 0), 0);
-    const finalBalance = publicGoodsData[publicGoodsData.length - 1]?.current_balance || 0;
+    const avgEarnings = totalEarnings / publicGoodsData.length;
 
     return [
       { title: '당신의\n평균 기부액', value: avgDonation.toFixed(0), unit: '포인트' },
-      { title: '평균\n총 기부액', value: avgPartnerContrib.toFixed(0), unit: '포인트', highlight: true },
+      { title: '상대방의\n평균 기부액', value: avgPartnerContrib.toFixed(0), unit: '포인트', highlight: true },
       { title: '당신의\n총 수익', value: totalEarnings.toFixed(1), unit: '포인트' },
-      { title: '당신의\n최종 수익', value: finalBalance.toFixed(1), unit: '포인트' },
+      { title: '라운드 당\n평균 수익', value: avgEarnings.toFixed(1), unit: '포인트' },
     ];
   };
 
@@ -122,20 +120,52 @@ export default function ReportPage() {
     const avgReceived = data.reduce((sum, d) => sum + (d.received_amount || 0), 0) / data.length;
     const avgReturn = data.reduce((sum, d) => sum + (d.return_amount || 0), 0) / data.length;
     const totalEarnings = data.reduce((sum, d) => sum + (d.current_balance || 0), 0);
-    const finalBalance = data[data.length - 1]?.current_balance || 0;
     const maxBalance = data.length > 0 ? Math.max(...data.map(d => d.current_balance || 0)) : 0;
 
     return [
       { title: '상대가 보낸\n포인트', value: avgInvestment.toFixed(2), unit: '포인트' },
       { title: '당신이 돌려준\n포인트', value: avgReturn.toFixed(2), unit: '포인트', highlight: true },
       { title: '당신의\n순수익', value: avgReceived.toFixed(0), unit: '포인트' },
-      { title: '당신의\n총 수익', value: totalEarnings.toFixed(2), unit: '포인트' },
-      { title: '당신의\n최고 잔액', value: maxBalance.toFixed(0), unit: '포인트', highlight: true },
-      { title: '당신의\n최종 잔액', value: finalBalance.toFixed(0), unit: '포인트' },
+      { title: '당신의\n총 수익', value: totalEarnings.toFixed(2), unit: '포인트', highlight: true },
+      { title: '당신의\n최고 라운드 수익', value: maxBalance.toFixed(0), unit: '포인트' },
     ];
   };
 
-  const formatChartData = (data: GameData[], type: 'public-goods' | 'trust-game') => {
+  // User가 Trustee인 게임 (받아서 돌려주는 역할) 통계
+  const calculateTrusteeGameStats = (data: GameData[]): StatsCard[] => {
+    if (data.length === 0) return [];
+    
+    const avgReceived = data.reduce((sum, d) => sum + (d.received_amount || 0), 0) / data.length;
+    const avgReturned = data.reduce((sum, d) => sum + (d.return_amount || 0), 0) / data.length;
+    const avgKept = data.reduce((sum, d) => sum + (d.current_balance || 0), 0) / data.length;
+    const totalKept = data.reduce((sum, d) => sum + (d.current_balance || 0), 0);
+
+    return [
+      { title: 'Bot이 보낸\n평균 포인트', value: avgReceived.toFixed(1), unit: '포인트' },
+      { title: '당신이 돌려준\n평균 포인트', value: avgReturned.toFixed(1), unit: '포인트', highlight: true },
+      { title: '라운드 당\n평균 수익', value: avgKept.toFixed(1), unit: '포인트' },
+      { title: '당신의\n총 수익', value: totalKept.toFixed(1), unit: '포인트', highlight: true },
+    ];
+  };
+
+  // User가 Trustor인 게임 (투자하는 역할) 통계  
+  const calculateTrustorGameStats = (data: GameData[]): StatsCard[] => {
+    if (data.length === 0) return [];
+    
+    const avgInvestment = data.reduce((sum, d) => sum + (d.investment || 0), 0) / data.length;
+    const avgReceived = data.reduce((sum, d) => sum + (d.received_amount || 0), 0) / data.length;
+    const totalProfit = data.reduce((sum, d) => sum + (d.current_balance || 0), 0);
+    const avgProfit = totalProfit / data.length;
+
+    return [
+      { title: '당신의 평균\n투자 포인트', value: avgInvestment.toFixed(1), unit: '포인트', highlight: true },
+      { title: 'Bot이 돌려준\n평균 포인트', value: avgReceived.toFixed(1), unit: '포인트' },
+      { title: '당신의\n총 수익', value: totalProfit.toFixed(1), unit: '포인트', highlight: true },
+      { title: '라운드 당\n평균 수익', value: avgProfit.toFixed(1), unit: '포인트' },
+    ];
+  };
+
+  const formatChartData = (data: GameData[], type: 'public-goods' | 'trust-game', gameVersion?: 'trustee' | 'trustor', chartType?: 'left' | 'right') => {
     if (type === 'public-goods') {
       return data.map(d => ({
         round: d.round,
@@ -143,13 +173,42 @@ export default function ReportPage() {
         '당신의 기부액': d.donation,
       }));
     } else {
-      return data.map(d => ({
-        round: d.round,
-        '보낸 포인트': d.investment,
-        '돌려준 포인트': d.return_amount,
-        '당신의 순수익': d.current_balance,
-        '상대의 순수익': d.received_amount,
-      }));
+      // Trust Game - 게임 버전과 차트 위치에 따라 다른 데이터 표시
+      if (gameVersion === 'trustor') {
+        // User가 Trustor인 게임 (투자하는 사람)
+        if (chartType === 'left') {
+          // 왼쪽 차트: 보낸 포인트와 돌려받은 포인트
+          return data.map(d => ({
+            round: d.round,
+            '보낸 포인트': d.investment,
+            '돌려받은 포인트': d.received_amount,
+          }));
+        } else {
+          // 오른쪽 차트: 사용자와 Bot의 순수익 비교
+          return data.map(d => ({
+            round: d.round,
+            '당신의 순손익': d.current_balance,
+            'Bot의 순수익': d.investment ? ((d.investment * 3) - (d.received_amount || 0)) : 0, // Bot이 받은 금액(투자액×3) - Bot이 돌려준 금액
+          }));
+        }
+      } else {
+        // User가 Trustee인 게임 (받아서 돌려주는 사람)
+        if (chartType === 'left') {
+          // 왼쪽 차트: 보낸 포인트와 돌려준 포인트
+          return data.map(d => ({
+            round: d.round,
+            '보낸 포인트': d.received_amount,
+            '돌려준 포인트': d.return_amount,
+          }));
+        } else {
+          // 오른쪽 차트: 사용자와 Bot의 순수익 비교
+          return data.map(d => ({
+            round: d.round,
+            '당신의 순수익': d.current_balance,
+            'Bot의 순수익': d.return_amount ? ((d.return_amount || 0) - ((d.received_amount || 0) / 3)) : -((d.received_amount || 0) / 3), // Bot이 돌려받은 금액 - Bot이 실제 투자한 금액(received_amount/3)
+          }));
+        }
+      }
     }
   };
 
@@ -203,9 +262,8 @@ export default function ReportPage() {
             <div className="text-lg text-red-600 mb-4">오류가 발생했습니다</div>
             <div className="text-sm text-gray-600 mb-4">{error}</div>
             {/* 디버깅 정보 */}
-            <div className="text-xs text-gray-500 mb-4">
-              <div>사용자 이메일: {user?.email}</div>
-              <div>병록번호: {getMedicalRecordNumber()}</div>
+            <div className="text-xs text-gray-500">
+              사용자: {getMedicalRecordNumber()} | 이메일: {user?.email}
             </div>
             <button 
               onClick={loadGameData}
@@ -236,10 +294,10 @@ export default function ReportPage() {
             Public Goods ({publicGoodsData.length}/10)
           </TabsTrigger>
           <TabsTrigger value="trust-game-receiver">
-            Trust Game Receiver ({trustGameReceiverData.length}/10)
+            신뢰게임 - 당신이 Trustee인 버전 ({trustGameReceiverData.length}/10)
           </TabsTrigger>
           <TabsTrigger value="trust-game-trustee">
-            Trust Game Trustee ({trustGameTrusteeData.length}/40)
+            신뢰게임 - 당신이 Trustor인 버전 ({trustGameTrusteeData.length}/40)
           </TabsTrigger>
         </TabsList>
 
@@ -315,16 +373,16 @@ export default function ReportPage() {
         <TabsContent value="trust-game-receiver" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>신뢰 게임 (수탁자 역할) 결과 분석</CardTitle>
+              <CardTitle>신뢰 게임 - 당신이 Trustee인 버전</CardTitle>
               <CardDescription>
-                총 {trustGameReceiverData.length}라운드 완료 (최대 10라운드)
+                총 {trustGameReceiverData.length}라운드 완료 (최대 10라운드) - Bot이 투자하고 당신이 받아서 돌려주는 게임
               </CardDescription>
             </CardHeader>
             <CardContent>
               {trustGameReceiverData.length > 0 ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                    {calculateTrustGameStats(trustGameReceiverData).map((stat, index) => (
+                    {calculateTrusteeGameStats(trustGameReceiverData).map((stat, index) => (
                       <div
                         key={index}
                         className={`p-4 rounded-lg text-center ${
@@ -348,7 +406,7 @@ export default function ReportPage() {
                       <h3 className="text-lg font-semibold mb-4">보낸 포인트와 돌려준 포인트</h3>
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameReceiverData, 'trust-game')}>
+                          <LineChart data={formatChartData(trustGameReceiverData, 'trust-game', 'trustee', 'left')}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="round" />
                             <YAxis />
@@ -374,10 +432,10 @@ export default function ReportPage() {
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">Payoffs Over Rounds</h3>
+                      <h3 className="text-lg font-semibold mb-4">당신과 Bot의 순수익 비교</h3>
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameReceiverData, 'trust-game')}>
+                          <LineChart data={formatChartData(trustGameReceiverData, 'trust-game', 'trustee', 'right')}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="round" />
                             <YAxis />
@@ -392,10 +450,10 @@ export default function ReportPage() {
                             />
                             <Line 
                               type="monotone" 
-                              dataKey="상대의 순수익" 
-                              stroke="#8b5cf6" 
+                              dataKey="Bot의 순수익" 
+                              stroke="#10b981" 
                               strokeWidth={2}
-                              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                              dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                             />
                           </LineChart>
                         </ResponsiveContainer>
@@ -415,16 +473,16 @@ export default function ReportPage() {
         <TabsContent value="trust-game-trustee" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>신뢰 게임 (신탁자 역할) 결과 분석</CardTitle>
+              <CardTitle>신뢰 게임 - 당신이 Trustor인 버전</CardTitle>
               <CardDescription>
-                총 {trustGameTrusteeData.length}라운드 완료 (최대 40라운드)
+                총 {trustGameTrusteeData.length}라운드 완료 (최대 40라운드) - 당신이 투자하고 Bot이 받아서 돌려주는 게임
               </CardDescription>
             </CardHeader>
             <CardContent>
               {trustGameTrusteeData.length > 0 ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                    {calculateTrustGameStats(trustGameTrusteeData).map((stat, index) => (
+                    {calculateTrustorGameStats(trustGameTrusteeData).map((stat, index) => (
                       <div
                         key={index}
                         className={`p-4 rounded-lg text-center ${
@@ -448,7 +506,7 @@ export default function ReportPage() {
                       <h3 className="text-lg font-semibold mb-4">보낸 포인트와 돌려받은 포인트</h3>
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameTrusteeData, 'trust-game')}>
+                          <LineChart data={formatChartData(trustGameTrusteeData, 'trust-game', 'trustor', 'left')}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis 
                               dataKey="round" 
@@ -479,10 +537,10 @@ export default function ReportPage() {
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">손익</h3>
+                      <h3 className="text-lg font-semibold mb-4">당신과 Bot의 순수익 비교</h3>
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameTrusteeData, 'trust-game')}>
+                          <LineChart data={formatChartData(trustGameTrusteeData, 'trust-game', 'trustor', 'right')}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis 
                               dataKey="round" 
@@ -495,17 +553,17 @@ export default function ReportPage() {
                             <Legend />
                             <Line 
                               type="monotone" 
-                              dataKey="당신의 순수익" 
+                              dataKey="당신의 순손익" 
                               stroke="#ef4444" 
                               strokeWidth={2}
                               dot={{ fill: '#ef4444', strokeWidth: 2, r: 3 }}
                             />
                             <Line 
                               type="monotone" 
-                              dataKey="상대의 순수익" 
-                              stroke="#8b5cf6" 
+                              dataKey="Bot의 순수익" 
+                              stroke="#10b981" 
                               strokeWidth={2}
-                              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 3 }}
+                              dot={{ fill: '#10b981', strokeWidth: 2, r: 3 }}
                             />
                           </LineChart>
                         </ResponsiveContainer>

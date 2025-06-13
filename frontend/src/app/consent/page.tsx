@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Check, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveConsentData } from '@/services/gameService';
+import { consentAPI } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ConsentPage() {
@@ -41,8 +41,8 @@ export default function ConsentPage() {
         throw new Error('사용자 정보를 찾을 수 없습니다.');
       }
 
-      // Firebase에 동의 데이터 저장
-      await saveConsentData({
+      // 백엔드 API 호출
+      await consentAPI.submitConsent({
         medicalRecordNumber,
         consentGiven: true,
         consentDetails: {

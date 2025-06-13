@@ -8,7 +8,7 @@ import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { checkConsentData } from '@/services/gameService';
+import { consentAPI } from '@/lib/api';
 
 
 export default function LandingPage() {
@@ -26,9 +26,9 @@ export default function LandingPage() {
     }
 
     try {
-      const consentData = await checkConsentData(medicalRecordNumber);
+      const consentData = await consentAPI.checkConsent(medicalRecordNumber);
       
-      if (consentData.exists && consentData.consentGiven) {
+      if (consentData.exists && consentData.consent_given) {
         // 이미 동의서를 작성했으면 바로 게임 페이지로
         console.log('동의서 이미 완료됨, /games로 이동');
         router.push('/games');
@@ -58,9 +58,9 @@ export default function LandingPage() {
         } else {
           // 이미 비밀번호를 변경했다면 동의서 확인 후 적절한 페이지로 이동
           try {
-            const consentData = await checkConsentData(medicalRecordNumber);
+            const consentData = await consentAPI.checkConsent(medicalRecordNumber);
             
-            if (consentData.exists && consentData.consentGiven) {
+            if (consentData.exists && consentData.consent_given) {
               // 이미 동의서를 작성했으면 바로 게임 페이지로
               router.push('/games');
             } else {

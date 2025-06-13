@@ -27,11 +27,11 @@ export default function HomePage() {
           ctaText="Start as Receiver"
         />
         <GameCard
-          title="Trust Game (Trustee)"
+          title="Trust Game (Trustor)"
           description="Invest in others, but be wary! Each opponent has a different strategy. Can you maximize your returns?"
           link="/trust-game/trustee"
           Icon={Brain}
-          ctaText="Start as Trustee"
+          ctaText="Start as Trustor"
         />
       </div>
     </div>

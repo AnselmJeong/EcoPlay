@@ -389,4 +389,58 @@ export const checkConsentData = async (medicalRecordNumber: string) => {
     console.error('동의서 데이터 확인 오류:', error);
     throw new Error('동의서 데이터 확인에 실패했습니다.');
   }
+};
+
+// 특정 사용자 ID의 데이터 확인 (디버깅용)
+export const debugSpecificUser = async (userId: string) => {
+  try {
+    console.log(`=== 사용자 ${userId} 데이터 조회 시작 ===`);
+    
+    // Public Goods Game 데이터 조회
+    const pgQuery = query(
+      collection(db, COLLECTIONS.PUBLIC_GOODS),
+      where('user_id', '==', userId)
+    );
+    const pgSnapshot = await getDocs(pgQuery);
+    console.log(`사용자 ${userId} Public Goods 문서 수:`, pgSnapshot.size);
+    
+    pgSnapshot.docs.forEach((doc, index) => {
+      console.log(`Public Goods 문서 ${index + 1}:`, doc.data());
+    });
+    
+    // Trust Game 데이터 조회
+    const tgQuery = query(
+      collection(db, COLLECTIONS.TRUST_GAME),
+      where('user_id', '==', userId)
+    );
+    const tgSnapshot = await getDocs(tgQuery);
+    console.log(`사용자 ${userId} Trust Game 문서 수:`, tgSnapshot.size);
+    
+    tgSnapshot.docs.forEach((doc, index) => {
+      console.log(`Trust Game 문서 ${index + 1}:`, doc.data());
+    });
+    
+    // 동의서 데이터 조회
+    const consentQuery = query(
+      collection(db, COLLECTIONS.CONSENT),
+      where('user_id', '==', userId)
+    );
+    const consentSnapshot = await getDocs(consentQuery);
+    console.log(`사용자 ${userId} 동의서 문서 수:`, consentSnapshot.size);
+    
+    consentSnapshot.docs.forEach((doc, index) => {
+      console.log(`동의서 문서 ${index + 1}:`, doc.data());
+    });
+    
+    console.log(`=== 사용자 ${userId} 데이터 조회 완료 ===`);
+    
+    return {
+      publicGoodsCount: pgSnapshot.size,
+      trustGameCount: tgSnapshot.size,
+      consentCount: consentSnapshot.size
+    };
+  } catch (error) {
+    console.error(`사용자 ${userId} 데이터 조회 오류:`, error);
+    return null;
+  }
 }; 

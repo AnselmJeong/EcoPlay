@@ -10,7 +10,7 @@ import { AlertCircle, CheckCircle2, TrendingUp, ThumbsUp, ArrowRight, User, Bot,
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { savePublicGoodsResult, generateSessionId } from '@/services/gameService';
+import { publicGoodsAPI } from '@/lib/api';
 
 const TOTAL_ROUNDS = 10;
 const INITIAL_POINTS = 100;
@@ -149,7 +149,6 @@ export default function PublicGoodsGamePage() {
   const [gameResult, setGameResult] = useState<any>(null);
   const [isGameFinished, setIsGameFinished] = useState(false);
   const [maxDonation, setMaxDonation] = useState(Math.floor(INITIAL_POINTS / 2));
-  const [sessionId] = useState(() => generateSessionId());
   const [startTime, setStartTime] = useState<number>(Date.now());
   const { toast } = useToast();
   const { getMedicalRecordNumber } = useAuth();
@@ -179,74 +178,46 @@ export default function PublicGoodsGamePage() {
     }
 
     try {
-      const medicalRecordNumber = getMedicalRecordNumber();
-      if (!medicalRecordNumber) {
-        throw new Error('사용자 정보를 찾을 수 없습니다.');
-      }
-
-      // 응답 시간 계산
-      const responseTime = Date.now() - startTime;
-
-      // 다른 플레이어들의 기여 시뮬레이션 (봇들의 현재 잔액 기반)
-      const otherDonations = botBalances.map(botBalance => {
-        const maxBotDonation = Math.floor(botBalance / 2);
-        return Math.floor(Math.random() * maxBotDonation) + Math.floor(maxBotDonation * 0.1);
+      // 백엔드 API 호출
+      const response = await publicGoodsAPI.submitRound({
+        round: currentRound,
+        donation: donationAmount,
+        current_balance: playerBalance
       });
-      
-      // 총 기여액 계산
-      const totalContribution = donationAmount + otherDonations.reduce((sum, d) => sum + d, 0);
-      const multipliedTotal = totalContribution * 1.5;
-      const sharePerPlayer = multipliedTotal / NUM_PLAYERS;
-      const personalReturn = sharePerPlayer;
-      const netGain = personalReturn - donationAmount;
-      const newBalance = playerBalance - donationAmount + personalReturn;
-      
-      // 봇들의 잔액 업데이트
+
+      // 백엔드에서 계산된 결과 사용
+      const result = {
+        user_donation: response.user_donation,
+        other_donations: response.other_donations,
+        total_contribution: response.total_donated,
+        share_per_player: response.share_per_player,
+        payoff: response.payoff,
+        new_balance: response.new_balance
+      };
+
+      // 봇들의 잔액 계산 (백엔드에서 other_donations 제공)
       const newBotBalances = botBalances.map((botBalance, index) => {
-        const botDonation = otherDonations[index];
-        return botBalance - botDonation + sharePerPlayer;
+        const botDonation = response.other_donations[index];
+        return botBalance - botDonation + response.share_per_player;
       });
       setBotBalances(newBotBalances);
 
-      // Firebase에 게임 결과 저장
-      await savePublicGoodsResult({
-        medicalRecordNumber,
-        gameType: 'public-goods',
-        round: currentRound,
-        contribution: donationAmount,
-        groupTotal: totalContribution,
-        personalReturn: personalReturn,
-        responseTime,
-        sessionId,
-        groupId: `group_${sessionId}`,
-        otherDonations: otherDonations
-      });
-
-      const result = {
-        user_donation: donationAmount,
-        other_donations: otherDonations,
-        total_contribution: totalContribution,
-        share_per_player: sharePerPlayer,
-        payoff: netGain,
-        new_balance: newBalance
-      };
-
-      setPlayerBalance(newBalance);
+      setPlayerBalance(response.new_balance);
       setGameResult(result);
       
       toast({
         title: `Round ${currentRound} Submitted!`,
-        description: `Your new balance is ${newBalance.toFixed(1)} points.`,
+        description: response.message || `Your new balance is ${response.new_balance.toFixed(1)} points.`,
       });
 
       if (currentRound >= TOTAL_ROUNDS) {
         setIsGameFinished(true);
       }
     } catch (error: any) {
-      console.error('게임 저장 오류:', error);
+      console.error('게임 제출 오류:', error);
       toast({
         title: "Error",
-        description: error.message || "게임 결과 저장에 실패했습니다.",
+        description: error.message || "게임 제출에 실패했습니다.",
         variant: "destructive",
       });
     }

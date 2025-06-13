@@ -10,7 +10,7 @@ import { AlertCircle, CheckCircle2, ThumbsUp, ArrowRight, User, Bot, Gift, Send,
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveTrustGameResult, generateSessionId } from '@/services/gameService';
+import { trustGameAPI } from '@/lib/api';
 
 const TOTAL_ROUNDS = 10;
 const INITIAL_BALANCE = 10; // Both sender and receiver start with 10 points
@@ -140,19 +140,18 @@ export default function TrustGameReceiverPage() {
   const [isGameFinished, setIsGameFinished] = useState(false);
   const [receivedFromSender, setReceivedFromSender] = useState(0);
   const [maxReturn, setMaxReturn] = useState(0);
-  const [sessionId] = useState(() => generateSessionId());
   const [startTime, setStartTime] = useState<number>(Date.now());
   const { toast } = useToast();
   const { getMedicalRecordNumber } = useAuth();
 
-  const gameTitle = "신뢰 게임 (수신자)";
+  const gameTitle = "Trust Game (Trustee)";
   const gameRules = [
-    "당신은 이 게임에서 수신자 역할을 합니다.",
-    `송신자와 수신자 모두 10포인트로 시작합니다.`,
-    `총 ${TOTAL_ROUNDS}라운드로 진행됩니다.`,
-    "각 라운드에서 송신자가 투자한 금액이 3배로 증가하여 당신에게 전달됩니다.",
-    "받은 금액 중 일부 또는 전부를 송신자에게 돌려줄 수 있습니다.",
-    "신뢰 관계를 고려하여 현명하게 결정하세요."
+    "You are a trustee in this trust game.",
+    "Both trustor and trustee start with 10 points.",
+    `There are ${TOTAL_ROUNDS} rounds in total.`,
+    "In each round, the trustor's investment is tripled and sent to you.",
+    "You can return part or all of the received amount to the trustor.",
+    "Consider trust relationships and make wise decisions."
   ];
 
   useEffect(() => {
@@ -173,62 +172,49 @@ export default function TrustGameReceiverPage() {
     const returnAmountNum = returnAmount[0];
     if (returnAmountNum < 0 || returnAmountNum > maxReturn) {
       toast({
-        title: "잘못된 금액",
-        description: `0과 ${maxReturn} 사이의 값을 선택해주세요.`,
+        title: "Invalid Amount",
+        description: `Please select a value between 0 and ${maxReturn}.`,
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const medicalRecordNumber = getMedicalRecordNumber();
-      if (!medicalRecordNumber) {
-        throw new Error('사용자 정보를 찾을 수 없습니다.');
-      }
-
-      // 응답 시간 계산
-      const responseTime = Date.now() - startTime;
-
-      // Firebase에 게임 결과 저장
-      await saveTrustGameResult({
-        medicalRecordNumber,
-        gameType: 'trust-game',
-        role: 'trustee',
+      // 백엔드 API 호출
+      const response = await trustGameAPI.submitRound({
         round: currentRound,
-        decision: returnAmountNum,
-        receivedAmount: maxReturn,
-        multipliedAmount: maxReturn,
-        responseTime,
-        sessionId
+        role: "trustee",
+        current_balance: playerBalance,
+        received_amount: receivedFromSender,
+        return_amount: returnAmountNum
       });
 
-      const keptAmount = maxReturn - returnAmountNum;
-      const newBalance = playerBalance + keptAmount;
+      // 백엔드에서 계산된 결과 사용
+      setPlayerBalance(response.new_balance);
       
-      // 송신자에게 돌려준 금액만큼 송신자의 잔액 증가
+      // 송신자의 잔액 업데이트 (돌려준 금액만큼 추가)
       setOpponentBalance(prev => prev + returnAmountNum);
       
-      setPlayerBalance(newBalance);
       setRoundResult({
-        received_amount: maxReturn,
+        received_amount: receivedFromSender,
         return_amount: returnAmountNum,
-        kept_amount: keptAmount,
-        new_balance: newBalance
+        kept_amount: response.payoff,
+        new_balance: response.new_balance
       });
       
       toast({
-        title: `라운드 ${currentRound} 완료!`,
-        description: `${keptAmount}포인트를 획득했습니다. 총 잔액: ${newBalance}포인트`,
+        title: `Round ${currentRound} Completed!`,
+        description: response.message || `Your new balance: ${response.new_balance} points`,
       });
 
       if (currentRound >= TOTAL_ROUNDS) {
         setIsGameFinished(true);
       }
-    } catch (error) {
-      console.error('API Error:', error);
+    } catch (error: any) {
+      console.error('게임 제출 오류:', error);
       toast({
-        title: "오류",
-        description: "게임 제출 중 오류가 발생했습니다.",
+        title: "Error",
+        description: error.message || "Failed to submit game result.",
         variant: "destructive",
       });
     }
@@ -247,20 +233,20 @@ export default function TrustGameReceiverPage() {
         <Card className="shadow-lg animate-fadeInUp">
           <CardHeader>
             <CardTitle className="font-headline text-3xl flex items-center gap-2 text-primary justify-center">
-              <ThumbsUp className="h-8 w-8" /> 게임 종료!
+              <ThumbsUp className="h-8 w-8" /> Game Over!
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-center">
-            <p className="font-body text-lg">모든 {TOTAL_ROUNDS}라운드를 완료했습니다.</p>
-            <p className="font-body text-lg">최종 잔액: <strong className="font-headline text-3xl text-accent">{playerBalance}포인트</strong></p>
+            <p className="font-body text-lg">You have completed all {TOTAL_ROUNDS} rounds as a receiver.</p>
+            <p className="font-body text-lg">Final balance: <strong className="font-headline text-3xl text-accent">{playerBalance} points</strong></p>
             <p className="font-body text-md text-foreground/80">
-              당신의 결정이 송신자와의 신뢰 관계에 어떤 영향을 미쳤는지 생각해보세요.
+              How well did you build trust? Trust is a precious asset!
             </p>
           </CardContent>
           <CardFooter className="justify-center">
             <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-6">
               <Link href="/games">
-                게임 목록으로 <ArrowRight className="ml-2 h-5 w-5" />
+                Back to Games <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </CardFooter>
@@ -277,7 +263,7 @@ export default function TrustGameReceiverPage() {
           <CardHeader>
             <CardTitle className="font-headline text-xl text-center text-primary flex items-center justify-center gap-2">
               <HandHeart className="w-6 h-6" />
-              라운드 {currentRound} - 신뢰 게임
+              라운드 {currentRound} - Trust Game
             </CardTitle>
           </CardHeader>
           <CardContent>

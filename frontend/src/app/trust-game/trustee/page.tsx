@@ -9,9 +9,8 @@ import { Slider } from '@/components/ui/slider';
 import { AlertCircle, CheckCircle2, ThumbsUp, ArrowRight, User, Bot, Send, DollarSign, TrendingUp, ArrowLeftRight, HandHeart } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import { matchAPI } from '@/lib/api';
+import { matchAPI, trustGameAPI } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveTrustGameResult, generateSessionId } from '@/services/gameService';
 
 const ROUNDS_PER_OPPONENT = 10;
 const NUM_OPPONENTS = 4;
@@ -169,10 +168,9 @@ export default function TrustGameTrusteePage() {
   const [investment, setInvestment] = useState([0]);
   const [roundResult, setRoundResult] = useState<any | null>(null);
   const [isGameFinished, setIsGameFinished] = useState(false);
-  const [maxInvestment, setMaxInvestment] = useState(Math.floor(playerBalance / 2));
+  const [maxInvestment, setMaxInvestment] = useState(Math.floor(10 / 2));
   const [personalities, setPersonalities] = useState<OpponentPersonality[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sessionId] = useState(() => generateSessionId());
   const [startTime, setStartTime] = useState<number>(Date.now());
   const { toast } = useToast();
   const { getMedicalRecordNumber } = useAuth();
@@ -198,23 +196,20 @@ export default function TrustGameTrusteePage() {
     loadPersonalities();
   }, [toast]);
 
+  // 현재 상대방 정보 계산
   const currentOpponentIndex = Math.floor((currentOverallRound - 1) / ROUNDS_PER_OPPONENT);
-  const currentOpponent = personalities[currentOpponentIndex % NUM_OPPONENTS];
-  const roundWithCurrentOpponent = (currentOverallRound - 1) % ROUNDS_PER_OPPONENT + 1;
+  const roundWithCurrentOpponent = ((currentOverallRound - 1) % ROUNDS_PER_OPPONENT) + 1;
+  const currentOpponent = personalities[currentOpponentIndex % personalities.length];
 
-  const gameTitle = "신뢰 게임 (송신자)";
+  const gameTitle = "Trust Game (Trustor)";
   const gameRules = [
-    "당신은 이 게임에서 송신자(Trustee) 역할을 합니다.",
-    "시작 잔액은 10포인트입니다.",
-    `${NUM_OPPONENTS}명의 다른 상대와 각각 ${ROUNDS_PER_OPPONENT}라운드씩 플레이합니다 (총 ${TOTAL_ROUNDS}라운드).`,
-    "매 라운드에서 현재 잔액의 0~50%까지 투자할 수 있습니다.",
-    "잔액이 0이 되어도 최대 5포인트까지 투자 가능합니다 (부활 기회 제공).",
-    "투자 금액은 3배로 증가하여 상대방(수신자)에게 전달됩니다.",
-    "수신자는 받은 금액 중 일부를 당신에게 돌려줍니다.",
-    "목표: 상대방의 신뢰성을 파악하고 현명하게 투자하여 포인트를 최대화하세요."
+    "You are a trustor (investor) in this trust game.",
+    "You start with 10 points for each game session.",
+    "In each round, you can invest up to half of your current balance.",
+    "Your investment will be tripled and sent to the trustee.",
+    "The trustee will then decide how much to return to you.",
+    "Your goal is to build trust and maximize your final balance."
   ];
-  
-
 
   useEffect(() => {
     // 현재 잔액의 50%와 최소 투자액 5포인트 중 큰 값을 설정
@@ -235,65 +230,39 @@ export default function TrustGameTrusteePage() {
     }
 
     try {
-      const medicalRecordNumber = getMedicalRecordNumber();
-      if (!medicalRecordNumber) {
-        throw new Error('사용자 정보를 찾을 수 없습니다.');
-      }
-
-      // 응답 시간 계산
-      const responseTime = Date.now() - startTime;
-
-      // 상대방의 반환 시뮬레이션 (실제로는 백엔드에서 계산)
-      const sentAmount = investmentAmount * 3;
-      const returnRate = currentOpponent ? 
-        (Math.random() * (currentOpponent.return_rate_range[1] - currentOpponent.return_rate_range[0]) + currentOpponent.return_rate_range[0]) / 100 
-        : 0.5;
-      // 투자한 경우 최소 1포인트는 돌려받도록 보장 (신뢰 게임의 기본 룰)
-      const calculatedReturn = Math.round(sentAmount * returnRate);
-      const receivedBack = investmentAmount > 0 ? Math.max(1, calculatedReturn) : 0;
-      const newBalance = playerBalance - investmentAmount + receivedBack;
-
-      // Firebase에 게임 결과 저장
-      await saveTrustGameResult({
-        medicalRecordNumber,
-        gameType: 'trust-game',
-        role: 'trustor',
+      // 백엔드 API 호출
+      const response = await trustGameAPI.submitRound({
         round: currentOverallRound,
-        decision: investmentAmount,
-        receivedAmount: receivedBack,
-        multipliedAmount: sentAmount,
-        responseTime,
-        sessionId,
-        partnerId: `bot_${currentOpponentIndex}_${currentOpponent?.name || 'unknown'}`
+        role: "trustor",
+        current_balance: playerBalance,
+        investment: investmentAmount
       });
 
-      setPlayerBalance(newBalance);
+      // 백엔드에서 계산된 결과 사용
+      setPlayerBalance(response.new_balance);
       
-      // 수신자의 잔액도 업데이트
-      const opponentGain = sentAmount - receivedBack;
-      setOpponentBalance(prev => prev + opponentGain);
-      
+      // 라운드 결과 설정
       setRoundResult({
         investment: investmentAmount,
-        sent_amount: sentAmount,
-        received_back: receivedBack,
-        net_gain: newBalance - playerBalance,
-        new_balance: newBalance
+        sent_amount: investmentAmount * 3,
+        received_back: response.payoff + investmentAmount, // payoff + 원금 = 총 받은 금액
+        net_gain: response.payoff,
+        new_balance: response.new_balance
       });
       
       toast({
         title: `라운드 ${currentOverallRound} 완료!`,
-        description: `새로운 잔액: ${newBalance}포인트${newBalance < 0 ? ' (마이너스지만 계속 투자 가능!)' : ''}`,
+        description: response.message || `새로운 잔액: ${response.new_balance}포인트`,
       });
 
       if (currentOverallRound >= TOTAL_ROUNDS) {
         setIsGameFinished(true);
       }
     } catch (error: any) {
-      console.error('게임 저장 오류:', error);
+      console.error('게임 제출 오류:', error);
       toast({
         title: "오류",
-        description: error.message || "게임 결과 저장에 실패했습니다.",
+        description: error.message || "게임 제출에 실패했습니다.",
         variant: "destructive",
       });
     }
@@ -362,15 +331,15 @@ export default function TrustGameTrusteePage() {
           <CardHeader>
             <CardTitle className="font-headline text-xl text-center text-primary flex items-center justify-center gap-2">
               <HandHeart className="w-6 h-6" />
-              라운드 {currentOverallRound} - 신뢰 게임
+              라운드 {currentOverallRound} - Trust Game
             </CardTitle>
           </CardHeader>
           <CardContent>
             {/* Game Flow Visualization */}
             <div className="flex justify-center items-center gap-8 mb-6">
               <Character 
-                name="송신자 (You)" 
-                amount={roundResult ? `투자: ${roundResult.investment}` : `잔액: ${playerBalance}`} 
+                name="Trustor (You)" 
+                amount={roundResult ? `Investment: ${roundResult.investment}` : `Balance: ${playerBalance}`} 
                 isPlayer={true} 
                 role="sender"
                 showAmount={true}
@@ -379,17 +348,17 @@ export default function TrustGameTrusteePage() {
               <div className="flex flex-col items-center">
                 <ArrowLeftRight className="w-8 h-8 text-blue-500 mb-2" />
                 <div className="text-sm text-gray-600 text-center">
-                  <div>투자 × 3</div>
+                  <div>Investment × 3</div>
                   <div className="font-bold text-3xl text-blue-600">
                     {roundResult ? roundResult.sent_amount : (investment[0] * 3)}
                   </div>
-                  <div className="text-xs">(전송된 금액)</div>
+                  <div className="text-xs">(Sent Amount)</div>
                 </div>
               </div>
               
               <Character 
-                name="수신자 (Bot)" 
-                amount={roundResult ? `반환: ${roundResult.received_back}` : "대기중..."} 
+                name="Trustee (Bot)" 
+                amount={roundResult ? `Return: ${roundResult.received_back}` : "Waiting..."} 
                 isPlayer={false} 
                 role="receiver"
                 showAmount={true}
@@ -418,10 +387,10 @@ export default function TrustGameTrusteePage() {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600 mb-2">{playerBalance}포인트</div>
                   <p className="text-sm text-gray-600">
-                    현재 잔액 (최대 투자: {maxInvestment}포인트)
+                    Current Balance (Max Investment: {maxInvestment} points)
                     {playerBalance <= 10 && maxInvestment === 5 && (
                       <span className="block text-orange-600 font-medium mt-1">
-                        🚀 부활 기회: 최대 5포인트까지 투자 가능!
+                        🚀 Resurrection Chance: Up to 5 points can be invested!
                       </span>
                     )}
                   </p>
@@ -429,7 +398,7 @@ export default function TrustGameTrusteePage() {
                 
                 <div className="space-y-4">
                   <Label className="font-body text-lg block text-center">
-                    투자 금액: <span className="font-bold text-blue-600">{investment[0]}포인트</span>
+                    Investment Amount: <span className="font-bold text-blue-600">{investment[0]} points</span>
                   </Label>
                   
                   <Slider
@@ -443,7 +412,7 @@ export default function TrustGameTrusteePage() {
                   
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>0</span>
-                    <span className="font-medium">전송: {investment[0] * 3}포인트</span>
+                    <span className="font-medium">Sent: {investment[0] * 3} points</span>
                     <span>{maxInvestment}</span>
                   </div>
                 </div>
@@ -452,7 +421,7 @@ export default function TrustGameTrusteePage() {
                   onClick={handleSubmit} 
                   className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-3"
                 >
-                  투자하기 <Send className="ml-2 h-5 w-5" />
+                  Invest <Send className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             )}
@@ -463,7 +432,7 @@ export default function TrustGameTrusteePage() {
                 onClick={handleNextRound} 
                 className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-8"
               >
-                다음 라운드 <ArrowRight className="ml-2 h-5 w-5" />
+                Next Round <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </CardFooter>
           )}

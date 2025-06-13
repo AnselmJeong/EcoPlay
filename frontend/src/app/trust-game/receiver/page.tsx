@@ -3,118 +3,264 @@
 import { useState, useEffect } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Gift, AlertCircle, CheckCircle2, Send, ThumbsUp, ArrowRight } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { AlertCircle, CheckCircle2, ThumbsUp, ArrowRight, User, Bot, Gift, Send, DollarSign, HandHeart, ArrowLeftRight, TrendingUp } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { saveTrustGameResult, generateSessionId } from '@/services/gameService';
 
 const TOTAL_ROUNDS = 10;
-const INITIAL_BALANCE = 0; // Receiver starts with 0, gets points from sender
+const INITIAL_BALANCE = 10; // Both sender and receiver start with 10 points
+
+// Character component for trust game
+const Character = ({ name, amount, isPlayer = false, role, showAmount = true }: { 
+  name: string; 
+  amount: number | string; 
+  isPlayer?: boolean;
+  role: 'sender' | 'receiver';
+  showAmount?: boolean;
+}) => {
+  const getAvatarContent = () => {
+    if (isPlayer) {
+      return (
+        <div className="w-20 h-20 rounded-full bg-green-100 border-4 border-green-300 flex items-center justify-center mb-3">
+          <User className="w-10 h-10 text-green-600" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-20 h-20 rounded-full bg-blue-100 border-4 border-blue-300 flex items-center justify-center mb-3">
+        <Bot className="w-10 h-10 text-blue-600" />
+      </div>
+    );
+  };
+
+  const displayAmount = showAmount ? amount : "?";
+  const roleColor = role === 'sender' ? 'bg-blue-500' : 'bg-green-500';
+
+  return (
+    <div className="flex flex-col items-center p-4">
+      {getAvatarContent()}
+      <div className="bg-white rounded-lg shadow-md p-4 min-w-[100px] text-center border-2 border-gray-200">
+        <div className={`w-20 h-20 rounded-full ${roleColor} text-white flex items-center justify-center text-lg font-bold mx-auto mb-2`}>
+          {displayAmount}
+        </div>
+        <div className="text-sm font-medium text-gray-700">{name}</div>
+        <div className="text-xs text-gray-500 capitalize">{role}</div>
+      </div>
+    </div>
+  );
+};
+
+// Balance chart component
+const BalanceChart = ({ playerBalance, opponentBalance }: { 
+  playerBalance: number; 
+  opponentBalance: number; 
+}) => {
+  const maxBalance = Math.max(playerBalance, opponentBalance, 100); // 최소 100을 기준으로 설정
+  const playerHeight = (playerBalance / maxBalance) * 100;
+  const opponentHeight = (opponentBalance / maxBalance) * 100;
+
+  return (
+    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200">
+      <h3 className="text-lg font-semibold text-center mb-4 flex items-center justify-center gap-2">
+        <TrendingUp className="w-5 h-5" />
+        현재 잔액
+      </h3>
+      
+      <div className="flex items-end justify-center gap-8 h-40">
+        {/* 송신자 막대 */}
+        <div className="flex flex-col items-center">
+          <div className="text-sm font-medium text-gray-600 mb-2">송신자</div>
+          <div className="relative w-16 h-32 bg-gray-200 rounded-lg overflow-hidden border-2 border-gray-300">
+            <div 
+              className="absolute bottom-0 w-full bg-blue-500 transition-all duration-500 ease-out rounded-b-lg flex items-start justify-center"
+              style={{ height: `${opponentHeight}%` }}
+            >
+              <span className="text-gray-800 text-xs font-bold mt-1">{opponentBalance}</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* 수신자 막대 */}
+        <div className="flex flex-col items-center">
+          <div className="text-sm font-medium text-gray-600 mb-2">수신자</div>
+          <div className="relative w-16 h-32 bg-gray-200 rounded-lg overflow-hidden border-2 border-gray-300">
+            <div 
+              className="absolute bottom-0 w-full bg-green-500 transition-all duration-500 ease-out rounded-b-lg flex items-start justify-center"
+              style={{ height: `${playerHeight}%` }}
+            >
+              <span className="text-gray-800 text-xs font-bold mt-1">{playerBalance}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Trust game results summary component
+const TrustGameResultsSummary = ({ gameResult }: { gameResult: any }) => {
+  return (
+    <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
+      <h3 className="text-lg font-semibold text-center mb-4 flex items-center justify-center gap-2">
+        <DollarSign className="w-5 h-5" />
+        라운드 결과
+      </h3>
+      
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="text-center p-3 bg-white rounded border">
+          <div className="font-medium text-gray-600">받은 금액</div>
+          <div className="text-xl font-bold text-blue-600">{gameResult.received_amount}</div>
+        </div>
+        <div className="text-center p-3 bg-white rounded border">
+          <div className="font-medium text-gray-600">돌려준 금액</div>
+          <div className="text-xl font-bold text-green-600">{gameResult.return_amount}</div>
+        </div>
+      </div>
+      
+      <div className="mt-3 p-3 bg-white rounded border text-center">
+        <div className="font-medium text-gray-600">순수익</div>
+        <div className="text-2xl font-bold text-purple-600">{gameResult.kept_amount}</div>
+      </div>
+    </div>
+  );
+};
 
 export default function TrustGameReceiverPage() {
   const [currentRound, setCurrentRound] = useState(1);
-  const [playerBalance, setPlayerBalance] = useState(INITIAL_BALANCE); // This balance accumulates from returns not sent back
-  const [amountToReturn, setAmountToReturn] = useState('');
-  const [roundResult, setRoundResult] = useState<string | null>(null);
+  const [playerBalance, setPlayerBalance] = useState(INITIAL_BALANCE);
+  const [opponentBalance, setOpponentBalance] = useState(INITIAL_BALANCE); // 송신자 잔액 추적
+  const [returnAmount, setReturnAmount] = useState([0]);
+  const [roundResult, setRoundResult] = useState<any | null>(null);
   const [isGameFinished, setIsGameFinished] = useState(false);
-  const [receivedFromSender, setReceivedFromSender] = useState(0); // Actual amount * 3
+  const [receivedFromSender, setReceivedFromSender] = useState(0);
   const [maxReturn, setMaxReturn] = useState(0);
+  const [sessionId] = useState(() => generateSessionId());
+  const [startTime, setStartTime] = useState<number>(Date.now());
   const { toast } = useToast();
+  const { getMedicalRecordNumber } = useAuth();
 
-  const gameTitle = "Trust Game (Receiver)";
+  const gameTitle = "신뢰 게임 (수신자)";
   const gameRules = [
-    "You are the Receiver in this game.",
-    `There are ${TOTAL_ROUNDS} rounds.`,
-    "In each round, a Sender invests some points. This amount is tripled and given to you.",
-    "You can then choose to return any amount of this (from 0 up to what you received) back to the Sender.",
-    "Your goal is to decide wisely how much to return."
+    "당신은 이 게임에서 수신자 역할을 합니다.",
+    `송신자와 수신자 모두 10포인트로 시작합니다.`,
+    `총 ${TOTAL_ROUNDS}라운드로 진행됩니다.`,
+    "각 라운드에서 송신자가 투자한 금액이 3배로 증가하여 당신에게 전달됩니다.",
+    "받은 금액 중 일부 또는 전부를 송신자에게 돌려줄 수 있습니다.",
+    "신뢰 관계를 고려하여 현명하게 결정하세요."
   ];
 
   useEffect(() => {
-    // Simulate sender's investment for the new round
-    const senderInvestment = Math.floor(Math.random() * 30) + 10; // Sender invests 10-40 points
+    // Simulate sender's investment for the new round (max 50% of current balance)
+    const maxInvestment = Math.floor(opponentBalance / 2);
+    const senderInvestment = Math.floor(Math.random() * maxInvestment) + 1; // Sender invests 1 to maxInvestment points
     const tripledAmount = senderInvestment * 3;
+    
+    // 송신자의 잔액에서 투자금액 차감
+    setOpponentBalance(prev => prev - senderInvestment);
+    
     setReceivedFromSender(tripledAmount);
     setMaxReturn(tripledAmount);
-    setPlayerBalance(prev => prev + tripledAmount); // Temporarily add to balance, will subtract returned amount later
+    setReturnAmount([0]);
   }, [currentRound]);
   
   const handleSubmit = async () => {
-    const returnAmountNum = parseInt(amountToReturn);
-    if (isNaN(returnAmountNum) || returnAmountNum < 0 || returnAmountNum > maxReturn) {
+    const returnAmountNum = returnAmount[0];
+    if (returnAmountNum < 0 || returnAmountNum > maxReturn) {
       toast({
-        title: "Invalid Amount",
-        description: `Please enter a number between 0 and ${maxReturn}.`,
+        title: "잘못된 금액",
+        description: `0과 ${maxReturn} 사이의 값을 선택해주세요.`,
         variant: "destructive",
-        icon: <AlertCircle className="h-5 w-5" />,
       });
       return;
     }
 
-    const pointsKept = maxReturn - returnAmountNum;
-    // Adjust playerBalance: it was pre-incremented by maxReturn, so subtract what's returned.
-    // Or, simpler: playerBalance for this round = pointsKept. If balance accumulates across rounds, it's more complex.
-    // Let's assume balance is what you keep THIS ROUND, and it accumulates.
-    // So, current playerBalance already has `maxReturn` added. We need to subtract `returnAmountNum`.
-    // The prompt says "Receiver can return any amount back to the sender."
-    // "Player's balance increases by the distributed amount minus their initial donation." (Public Goods)
-    // So, here, it should be: player's balance increases by (amount received - amount returned).
-    // My useEffect added `maxReturn` to balance. So, `newBalance = currentBalance (which includes maxReturn) - returnAmountNum`. This is effectively `oldBalance + (maxReturn - returnAmountNum)`. Correct.
-    
-    const newBalance = playerBalance - returnAmountNum; // Since playerBalance was already incremented by receivedFromSender (maxReturn)
-    setPlayerBalance(newBalance); 
+    try {
+      const medicalRecordNumber = getMedicalRecordNumber();
+      if (!medicalRecordNumber) {
+        throw new Error('사용자 정보를 찾을 수 없습니다.');
+      }
 
-    setRoundResult(`Sender invested points which became ${maxReturn} for you. You returned ${returnAmountNum}. You kept ${pointsKept} points. Your total accumulated balance: ${newBalance}.`);
-    
-    // console.log("Firebase: Saving Trust Game (Receiver) round data", { round: currentRound, received: maxReturn, returned: returnAmountNum, kept: pointsKept, newBalance });
-    toast({
-        title: `Round ${currentRound} Decision Made!`,
-        description: `You kept ${pointsKept} points. Accumulated balance: ${newBalance}.`,
-        icon: <CheckCircle2 className="h-5 w-5" />,
-    });
+      // 응답 시간 계산
+      const responseTime = Date.now() - startTime;
 
-    if (currentRound >= TOTAL_ROUNDS) {
-      setIsGameFinished(true);
+      // Firebase에 게임 결과 저장
+      await saveTrustGameResult({
+        medicalRecordNumber,
+        gameType: 'trust-game',
+        role: 'trustee',
+        round: currentRound,
+        decision: returnAmountNum,
+        receivedAmount: maxReturn,
+        multipliedAmount: maxReturn,
+        responseTime,
+        sessionId
+      });
+
+      const keptAmount = maxReturn - returnAmountNum;
+      const newBalance = playerBalance + keptAmount;
+      
+      // 송신자에게 돌려준 금액만큼 송신자의 잔액 증가
+      setOpponentBalance(prev => prev + returnAmountNum);
+      
+      setPlayerBalance(newBalance);
+      setRoundResult({
+        received_amount: maxReturn,
+        return_amount: returnAmountNum,
+        kept_amount: keptAmount,
+        new_balance: newBalance
+      });
+      
+      toast({
+        title: `라운드 ${currentRound} 완료!`,
+        description: `${keptAmount}포인트를 획득했습니다. 총 잔액: ${newBalance}포인트`,
+      });
+
+      if (currentRound >= TOTAL_ROUNDS) {
+        setIsGameFinished(true);
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      toast({
+        title: "오류",
+        description: "게임 제출 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleNextRound = () => {
     setCurrentRound(prev => prev + 1);
-    setAmountToReturn('');
+    setReturnAmount([0]);
     setRoundResult(null);
-    // receivedFromSender and maxReturn will be updated by useEffect for the new round
+    setStartTime(Date.now()); // 다음 라운드 시작 시간 초기화
   };
-  
-  const additionalInfo = (
-    <div className="mt-4 p-3 bg-accent/10 rounded-lg flex items-center gap-2">
-      <Gift className="h-6 w-6 text-accent" />
-      <p className="font-body text-md text-accent-foreground/80">
-        This round, the Sender's investment (tripled) gives you: <strong className="font-headline text-accent">{receivedFromSender} points</strong>.
-      </p>
-    </div>
-  );
 
   if (isGameFinished) {
     return (
       <GameLayout title={gameTitle} rules={gameRules} playerBalance={playerBalance}>
         <Card className="shadow-lg animate-fadeInUp">
           <CardHeader>
-             <h2 className="font-headline text-3xl text-center mb-2">신뢰 게임 (수신자)</h2>
-            <CardTitle className="font-headline text-3xl flex items-center gap-2 text-primary">
-               <ThumbsUp className="h-8 w-8" /> Game Over!
+            <CardTitle className="font-headline text-3xl flex items-center gap-2 text-primary justify-center">
+              <ThumbsUp className="h-8 w-8" /> 게임 종료!
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="font-body text-lg">You have completed all {TOTAL_ROUNDS} rounds as the Receiver.</p>
-            <p className="font-body text-lg">Your final accumulated balance is: <strong className="font-headline text-2xl text-accent">{playerBalance} points</strong>.</p>
-             <p className="font-body text-md text-foreground/80">Consider how your decisions to return points might have affected the (simulated) Sender's trust and willingness to invest in the future.</p>
+          <CardContent className="space-y-4 text-center">
+            <p className="font-body text-lg">모든 {TOTAL_ROUNDS}라운드를 완료했습니다.</p>
+            <p className="font-body text-lg">최종 잔액: <strong className="font-headline text-3xl text-accent">{playerBalance}포인트</strong></p>
+            <p className="font-body text-md text-foreground/80">
+              당신의 결정이 송신자와의 신뢰 관계에 어떤 영향을 미쳤는지 생각해보세요.
+            </p>
           </CardContent>
-          <CardFooter>
-             <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-6">
-              <Link href="/">
-                Back to Home <ArrowRight className="ml-2 h-5 w-5" />
+          <CardFooter className="justify-center">
+            <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-6">
+              <Link href="/games">
+                게임 목록으로 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </CardFooter>
@@ -124,52 +270,104 @@ export default function TrustGameReceiverPage() {
   }
 
   return (
-    <GameLayout title={gameTitle} rules={gameRules} currentRound={currentRound} totalRounds={TOTAL_ROUNDS} playerBalance={playerBalance} additionalInfo={additionalInfo}>
-      <Card className="shadow-lg animate-fadeIn">
-        <CardHeader>
-           {currentRound === 1 && !roundResult && <h2 className="font-headline text-3xl text-center mb-4 text-primary">신뢰 게임 (수신자) 시작하기</h2>}
-          <CardTitle className="font-headline text-2xl text-primary">
-            {roundResult ? `Round ${currentRound} Results` : `Round ${currentRound}: Your Decision`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="min-h-[150px]">
-          {roundResult ? (
-            <div className="space-y-3 p-4 bg-secondary/50 rounded-md">
-              <p className="font-body text-md">{roundResult}</p>
-            </div>
-          ) : (
-            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
-              <div>
-                <Label htmlFor="returnAmountInput" className="font-body text-lg block mb-2">
-                  Amount to return to Sender (0 to {maxReturn}):
-                </Label>
-                <Input
-                  id="returnAmountInput"
-                  type="number"
-                  value={amountToReturn}
-                  onChange={(e) => setAmountToReturn(e.target.value)}
-                  placeholder={`Enter amount (max ${maxReturn})`}
-                  min="0"
-                  max={maxReturn}
-                  className="font-body text-lg p-3"
-                  required
-                />
-                <p className="text-sm text-muted-foreground mt-1">You received {maxReturn} points. How much will you send back?</p>
+    <GameLayout title={gameTitle} rules={gameRules} currentRound={currentRound} totalRounds={TOTAL_ROUNDS} playerBalance={playerBalance}>
+      <div className="space-y-6">
+        {/* Characters Display */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-headline text-xl text-center text-primary flex items-center justify-center gap-2">
+              <HandHeart className="w-6 h-6" />
+              라운드 {currentRound} - 신뢰 게임
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Game Flow Visualization */}
+            <div className="flex justify-center items-center gap-8 mb-6">
+              <Character 
+                name="송신자 (Bot)" 
+                amount={`보냄 ${Math.floor(receivedFromSender/3)}`} 
+                isPlayer={false} 
+                role="sender"
+                showAmount={true}
+              />
+              
+              <div className="flex flex-col items-center">
+                <ArrowLeftRight className="w-8 h-8 text-blue-500 mb-2" />
+                <div className="text-sm text-gray-600 text-center">
+                  <div>받은 금액</div>
+                  <div className="font-bold text-3xl text-blue-600">{receivedFromSender}</div>
+                  <div className="text-xs">(3배 증가)</div>
+                </div>
               </div>
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-3">
-                Submit Return Amount <Send className="ml-2 h-5 w-5" />
+              
+              <Character 
+                name="수신자 (You)" 
+                amount={roundResult ? `수익: ${roundResult.kept_amount}` : "결정중..."} 
+                isPlayer={true} 
+                role="receiver"
+                showAmount={true}
+              />
+            </div>
+
+            {/* Balance Chart */}
+            <BalanceChart 
+              playerBalance={playerBalance}
+              opponentBalance={opponentBalance}
+            />
+
+            {/* Game Results Summary */}
+            {roundResult && <TrustGameResultsSummary gameResult={roundResult} />}
+
+            {/* Game Controls - Slider Section */}
+            {!roundResult && (
+              <div className="mt-6 w-full max-w-md mx-auto space-y-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600 mb-2">{receivedFromSender}포인트</div>
+                  <p className="text-sm text-gray-600">송신자로부터 받은 금액</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <Label className="font-body text-lg block text-center">
+                    돌려줄 금액: <span className="font-bold text-green-600">{returnAmount[0]}포인트</span>
+                  </Label>
+                  
+                  <Slider
+                    value={returnAmount}
+                    onValueChange={setReturnAmount}
+                    max={maxReturn}
+                    min={0}
+                    step={1}
+                    className="w-full"
+                  />
+                  
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>0</span>
+                    <span className="font-medium">수익: {maxReturn - returnAmount[0]}포인트</span>
+                    <span>{maxReturn}</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handleSubmit} 
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-3"
+                >
+                  결정하기 <Send className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+          {roundResult && (
+            <CardFooter className="justify-center">
+              <Button 
+                onClick={handleNextRound} 
+                className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-8"
+              >
+                다음 라운드 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            </form>
+            </CardFooter>
           )}
-        </CardContent>
-        {roundResult && (
-          <CardFooter>
-            <Button onClick={handleNextRound} className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3">
-             Next Round <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </CardFooter>
-        )}
-      </Card>
+        </Card>
+      </div>
     </GameLayout>
   );
 }

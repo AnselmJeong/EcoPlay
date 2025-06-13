@@ -42,14 +42,14 @@ export default function GameLayout({
               <Progress value={progressPercentage} className="w-full h-3 bg-primary/20" indicatorClassName="bg-primary" />
             </div>
           )}
-          {currentOpponent && (
+          {/* {currentOpponent && (
             <CardDescription className="font-body mt-2 text-base">
               <span className="font-semibold">Current Opponent:</span> {currentOpponent}
             </CardDescription>
-          )}
+          )} */}
         </CardHeader>
         <CardContent>
-          <h3 className="font-headline text-xl text-primary mb-2">Game Rules:</h3>
+          <h3 className="font-headline text-xl text-primary mb-2">게임 규칙:</h3>
           <ul className="list-disc pl-5 space-y-2 font-body text-foreground/90 text-base">
             {rules.map((rule, index) => (
               <li key={index}>{rule}</li>

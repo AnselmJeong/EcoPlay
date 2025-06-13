@@ -5,12 +5,19 @@ build/
 dist/
 wheels/
 *.egg-info
+uv.lock
 
 # Virtual environments
 .venv
 
 # secret
 .env
+frontend/secret/key.tsx
+frontend/.env.local
+frontend/.next
+
+
+backend/secret/ecoplay.json
 
 # frontend
 

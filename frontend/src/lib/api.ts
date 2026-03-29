@@ -149,6 +149,23 @@ export const reportAPI = {
   },
 };
 
+// Questionnaire API
+export const questionnaireAPI = {
+  submitAnswers: async (data: {
+    medicalRecordNumber: string;
+    answers: Record<string, unknown>;
+  }) => {
+    return apiCall('/questionnaire/submit', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  checkStatus: async (medicalRecordNumber: string) => {
+    return apiCall(`/questionnaire/check/${medicalRecordNumber}`);
+  },
+};
+
 // Consent API
 export const consentAPI = {
   submitConsent: async (data: {

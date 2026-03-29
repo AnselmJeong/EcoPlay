@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import game, user, match, message, report, consent
+from routers import game, user, match, message, report, consent, questionnaire
 from core.firebase import init_firebase, verify_id_token
 
 
@@ -62,3 +62,4 @@ app.include_router(match.router)
 app.include_router(message.router)
 app.include_router(report.router)
 app.include_router(consent.router)
+app.include_router(questionnaire.router)

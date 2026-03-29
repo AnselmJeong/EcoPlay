@@ -1,94 +1,131 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "questionnaire-js/style.css";
+@import "tailwindcss";
+@import "tw-animate-css";
 
-@layer base {
-  :root {
-    --background: 208 100% 97%; /* Very light blue #F0F8FF */
-    --foreground: 210 40% 25%; /* Darker blue-gray for text */
+@custom-variant dark (&:is(.dark *));
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 210 40% 25%; /* Darker blue-gray for text on card */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-    --popover: 0 0% 100%; /* White */
-    --popover-foreground: 210 40% 25%; /* Darker blue-gray for text on popover */
+  --font-family-body: 'PT Sans', sans-serif;
+  --font-family-headline: 'Poppins', sans-serif;
+  --font-family-code: monospace;
 
-    --primary: 203 72% 71%; /* Soft blue #A0D2EB */
-    --primary-foreground: 210 30% 15%; /* Dark text on primary */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 
-    --secondary: 208 80% 92%; /* Lighter shade of primary/background */
-    --secondary-foreground: 210 40% 25%; /* Darker blue-gray for text */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
 
-    --muted: 208 60% 88%; /* Muted shade */
-    --muted-foreground: 210 30% 45%; /* Muted text */
-
-    --accent: 33 100% 63%; /* Pale orange #FFB347 */
-    --accent-foreground: 25 85% 20%; /* Dark brown for text on accent */
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 208 50% 80%; /* Border color */
-    --input: 208 50% 75%; /* Input border */
-    --ring: 33 100% 63%; /* Accent color for rings */
-
-    --radius: 0.5rem;
-
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-
-    --sidebar-background: 208 100% 95%; /* Slightly darker than main bg for sidebar */
-    --sidebar-foreground: 210 40% 25%;
-    --sidebar-primary: 203 72% 65%; /* Slightly darker primary for sidebar */
-    --sidebar-primary-foreground: 210 30% 15%;
-    --sidebar-accent: 33 100% 60%; /* Slightly darker accent for sidebar */
-    --sidebar-accent-foreground: 25 85% 20%;
-    --sidebar-border: 208 50% 75%;
-    --sidebar-ring: 33 100% 63%;
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
   }
-
-  .dark {
-    /* Keeping dark theme variables as a fallback, adjust if dark mode is specifically requested */
-    --background: 210 20% 10%;
-    --foreground: 208 100% 97%;
-
-    --card: 210 20% 12%;
-    --card-foreground: 208 100% 97%;
-
-    --popover: 210 20% 10%;
-    --popover-foreground: 208 100% 97%;
-
-    --primary: 203 72% 60%;
-    --primary-foreground: 25 85% 20%;
-
-    --secondary: 210 20% 18%;
-    --secondary-foreground: 208 100% 97%;
-
-    --muted: 210 20% 22%;
-    --muted-foreground: 208 50% 70%;
-
-    --accent: 33 100% 58%;
-    --accent-foreground: 25 85% 15%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 210 20% 25%;
-    --input: 210 20% 25%;
-    --ring: 33 100% 58%;
-
-    --sidebar-background: 210 20% 12%;
-    --sidebar-foreground: 208 100% 97%;
-    --sidebar-primary: 203 72% 55%;
-    --sidebar-primary-foreground: 25 85% 15%;
-    --sidebar-accent: 33 100% 55%;
-    --sidebar-accent-foreground: 25 85% 15%;
-    --sidebar-border: 210 20% 20%;
-    --sidebar-ring: 33 100% 58%;
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
   }
+}
+
+/* :root:root has higher specificity (0,2,0) than questionnaire-js's :root (0,1,0)
+   so our variables always win regardless of CSS load order.
+   Variables use complete color values so var(--card) works directly. */
+:root:root {
+  --background: hsl(208 100% 97%);
+  --foreground: hsl(210 40% 25%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(210 40% 25%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 40% 25%);
+  --primary: hsl(203 72% 71%);
+  --primary-foreground: hsl(210 30% 15%);
+  --secondary: hsl(208 80% 92%);
+  --secondary-foreground: hsl(210 40% 25%);
+  --muted: hsl(208 60% 88%);
+  --muted-foreground: hsl(210 30% 45%);
+  --accent: hsl(33 100% 63%);
+  --accent-foreground: hsl(25 85% 20%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(208 50% 80%);
+  --input: hsl(208 50% 75%);
+  --ring: hsl(33 100% 63%);
+  --radius: 0.5rem;
+  --chart-1: hsl(12 76% 61%);
+  --chart-2: hsl(173 58% 39%);
+  --chart-3: hsl(197 37% 24%);
+  --chart-4: hsl(43 74% 66%);
+  --chart-5: hsl(27 87% 67%);
+  --sidebar-background: hsl(208 100% 95%);
+  --sidebar-foreground: hsl(210 40% 25%);
+  --sidebar-primary: hsl(203 72% 65%);
+  --sidebar-primary-foreground: hsl(210 30% 15%);
+  --sidebar-accent: hsl(33 100% 60%);
+  --sidebar-accent-foreground: hsl(25 85% 20%);
+  --sidebar-border: hsl(208 50% 75%);
+  --sidebar-ring: hsl(33 100% 63%);
+}
+
+.dark {
+  --background: hsl(210 20% 10%);
+  --foreground: hsl(208 100% 97%);
+  --card: hsl(210 20% 12%);
+  --card-foreground: hsl(208 100% 97%);
+  --popover: hsl(210 20% 10%);
+  --popover-foreground: hsl(208 100% 97%);
+  --primary: hsl(203 72% 60%);
+  --primary-foreground: hsl(25 85% 20%);
+  --secondary: hsl(210 20% 18%);
+  --secondary-foreground: hsl(208 100% 97%);
+  --muted: hsl(210 20% 22%);
+  --muted-foreground: hsl(208 50% 70%);
+  --accent: hsl(33 100% 58%);
+  --accent-foreground: hsl(25 85% 15%);
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(210 20% 25%);
+  --input: hsl(210 20% 25%);
+  --ring: hsl(33 100% 58%);
+  --sidebar-background: hsl(210 20% 12%);
+  --sidebar-foreground: hsl(208 100% 97%);
+  --sidebar-primary: hsl(203 72% 55%);
+  --sidebar-primary-foreground: hsl(25 85% 15%);
+  --sidebar-accent: hsl(33 100% 55%);
+  --sidebar-accent-foreground: hsl(25 85% 15%);
+  --sidebar-border: hsl(210 20% 20%);
+  --sidebar-ring: hsl(33 100% 58%);
 }
 
 @layer base {
@@ -97,6 +134,30 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Removed font-family: Arial, Helvetica, sans-serif; as it will be handled by tailwind.config.ts and layout.tsx */
   }
+}
+
+/* Restore questionnaire-js's own color variables scoped to its wrapper.
+   These oklch values match the original questionnaire-js :root definitions,
+   so the component renders with its intended design. */
+.questionnaire-wrapper {
+  --background: oklch(98% .012 95.3);
+  --foreground: oklch(23% .024 196.8);
+  --card: oklch(99.2% .008 95.2);
+  --card-foreground: oklch(23% .024 196.8);
+  --popover: oklch(99.5% .004 90);
+  --popover-foreground: oklch(23% .024 196.8);
+  --primary: oklch(52% .104 191.8);
+  --primary-foreground: oklch(99% .004 95.2);
+  --secondary: oklch(95% .014 84.7);
+  --secondary-foreground: oklch(30% .024 192.1);
+  --muted: oklch(96% .008 93.1);
+  --muted-foreground: oklch(49% .02 190.1);
+  --accent: oklch(93% .028 72.7);
+  --accent-foreground: oklch(28% .025 190.1);
+  --destructive: oklch(57.7% .245 27.325);
+  --border: oklch(88% .01 88.5);
+  --input: oklch(90% .012 88.7);
+  --ring: oklch(52% .104 191.8);
+  --radius: .95rem;
 }

@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { UserPlus, Handshake, Target, LogOut } from 'lucide-react';
+import { UserPlus, Handshake, LogOut } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { consentAPI } from '@/lib/api';
+import { consentAPI, questionnaireAPI } from '@/lib/api';
 
 
 export default function LandingPage() {
@@ -27,19 +27,19 @@ export default function LandingPage() {
 
     try {
       const consentData = await consentAPI.checkConsent(medicalRecordNumber);
-      
+
       if (consentData.exists && consentData.consent_given) {
-        // 이미 동의서를 작성했으면 바로 게임 페이지로
-        console.log('동의서 이미 완료됨, /games로 이동');
-        router.push('/games');
+        const questionnaireStatus = await questionnaireAPI.checkStatus(medicalRecordNumber);
+        if (questionnaireStatus.completed) {
+          router.push('/games');
+        } else {
+          router.push('/questionnaire');
+        }
       } else {
-        // 동의서를 작성하지 않았으면 동의서 페이지로
-        console.log('동의서 미완료, /consent로 이동');
         router.push('/consent');
       }
     } catch (error) {
-      console.error('동의서 확인 오류:', error);
-      // 오류가 발생하면 안전하게 동의서 페이지로 이동
+      console.error('상태 확인 오류:', error);
       router.push('/consent');
     }
   };
@@ -59,17 +59,19 @@ export default function LandingPage() {
           // 이미 비밀번호를 변경했다면 동의서 확인 후 적절한 페이지로 이동
           try {
             const consentData = await consentAPI.checkConsent(medicalRecordNumber);
-            
+
             if (consentData.exists && consentData.consent_given) {
-              // 이미 동의서를 작성했으면 바로 게임 페이지로
-              router.push('/games');
+              const questionnaireStatus = await questionnaireAPI.checkStatus(medicalRecordNumber);
+              if (questionnaireStatus.completed) {
+                router.push('/games');
+              } else {
+                router.push('/questionnaire');
+              }
             } else {
-              // 동의서를 작성하지 않았으면 동의서 페이지로
               router.push('/consent');
             }
           } catch (error) {
-            console.error('동의서 확인 오류:', error);
-            // 오류가 발생하면 안전하게 동의서 페이지로 이동
+            console.error('상태 확인 오류:', error);
             router.push('/consent');
           }
         }
@@ -104,7 +106,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 py-8">
+    <div className="bg-gradient-to-b from-blue-50 to-purple-50 py-8">
       <div className="container mx-auto px-6 space-y-8 max-w-6xl">
         {/* Hero Section */}
         <Card className="overflow-hidden shadow-xl border-2 border-blue-200">
@@ -181,27 +183,6 @@ export default function LandingPage() {
                   }}
                 ></div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Research Benefits Section */}
-        <Card className="bg-blue-50 border-blue-300 border-2 shadow-xl">
-          <CardContent className="p-6 md:p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <Target className="w-6 md:w-8 h-6 md:h-8 text-blue-600" />
-              <h3 className="text-xl md:text-2xl font-bold text-blue-800">
-                연구 참여를 통해 무엇을 알 수 있나요?
-              </h3>
-            </div>
-            
-            <div className="grid md:grid-cols-1 gap-6 text-gray-700 text-lg md:text-base">
-              <ul className="space-y-3 list-disc pl-5">
-                <li>간단한 심리 게임과 짧은 설문을 통해 나의 신뢰 성향과 반응 패턴을 확인할 수 있습니다.</li>
-                <li>여러분의 참여는 심리 정도와 대인 관계 어려움 사이의 관계를 이해하는 단서가 됩니다.</li>
-                <li>수집된 자료는 연구 목적으로만 사용되며, 익명 처리로 안전하게 보호됩니다.</li>
-                <li>개인 신뢰 정보는 철저히 수집되지 않으며, 참여자 개인 정보는 철저히 보호됩니다.</li>
-              </ul>
             </div>
           </CardContent>
         </Card>

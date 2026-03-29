@@ -93,10 +93,17 @@ async def submit_public_goods_round(
         payoff = share_per_player - request.donation
         new_balance = request.current_balance + payoff
 
+        # 이메일에서 Medical Record Number 추출
+        email = current_user.get("email", "")
+        if "@eco.play" in email:
+            medical_record_number = email.replace("@eco.play", "")
+        else:
+            medical_record_number = current_user["uid"]  # fallback to UID
+
         # Firestore에 저장
         db = get_firestore_client()
         game_data = {
-            "user_id": current_user["uid"],
+            "user_id": medical_record_number,  # Medical Record Number 사용
             "user_email": current_user.get("email", f"{current_user['uid']}@eco.play"),
             "game_name": "public goods game",
             "round": request.round,
@@ -135,13 +142,20 @@ async def submit_trust_game_round(
 ):
     """Trust Game 라운드 제출 및 결과 계산"""
     try:
-        if request.role == "receiver":
-            # 수신자: 반환할 금액 결정
+        if request.role == "trustee":
+            # 수신자(trustee): 반환할 금액 결정
             points_kept = request.received_amount - request.return_amount
             new_balance = request.current_balance + points_kept
 
+            # 이메일에서 Medical Record Number 추출
+            email = current_user.get("email", "")
+            if "@eco.play" in email:
+                medical_record_number = email.replace("@eco.play", "")
+            else:
+                medical_record_number = current_user["uid"]  # fallback to UID
+
             game_data = {
-                "user_id": current_user["uid"],
+                "user_id": medical_record_number,  # Medical Record Number 사용
                 "user_email": current_user.get(
                     "email", f"{current_user['uid']}@eco.play"
                 ),
@@ -163,13 +177,20 @@ async def submit_trust_game_round(
             message = f"받은 금액: {request.received_amount}, 반환: {request.return_amount}, 보유: {points_kept}"
             payoff = points_kept
 
-        elif request.role == "trustee":
+        elif request.role == "trustor":
             # 신탁자: 투자할 금액 결정
             investment = request.investment
             new_balance = request.current_balance - investment
 
+            # 이메일에서 Medical Record Number 추출
+            email = current_user.get("email", "")
+            if "@eco.play" in email:
+                medical_record_number = email.replace("@eco.play", "")
+            else:
+                medical_record_number = current_user["uid"]  # fallback to UID
+
             game_data = {
-                "user_id": current_user["uid"],
+                "user_id": medical_record_number,  # Medical Record Number 사용
                 "user_email": current_user.get(
                     "email", f"{current_user['uid']}@eco.play"
                 ),
@@ -190,6 +211,11 @@ async def submit_trust_game_round(
 
             message = f"투자 금액: {investment}, 상대가 받은 금액: {investment * 3}"
             payoff = -investment  # 투자한 만큼 손실 (단순화)
+
+        else:
+            raise HTTPException(
+                status_code=400, detail=f"지원하지 않는 역할입니다: {request.role}"
+            )
 
         # Firestore에 저장
         db = get_firestore_client()

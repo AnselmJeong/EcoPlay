@@ -62,7 +62,7 @@ export default function ConsentPage() {
         description: "연구 참여 동의가 저장되었습니다.",
       });
 
-      router.push('/games');
+      router.push('/questionnaire');
     } catch (error: any) {
       console.error('동의 저장 오류:', error);
       toast({

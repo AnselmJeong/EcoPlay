@@ -1,0 +1,104 @@
+{
+  "pages": [
+    {
+      "name": "page1",
+      "title": "인구학적 정보",
+      "description": "자신의 기본 정보를 입력해주세요.",
+      "elements": [
+        {
+          "type": "text",
+          "name": "hospital_id",
+          "title": "병록번호",
+          "isRequired": true
+        },
+        {
+          "type": "radiogroup",
+          "name": "admission",
+          "title": "현재 입원 여부",
+          "choices": [
+            "입원",
+            "외래"
+          ],
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "name",
+          "title": "이름",
+          "isRequired": true
+        },
+        {
+          "type": "radiogroup",
+          "name": "sex",
+          "title": "성별",
+          "isRequired": true,
+          "choices": [
+            "남자",
+            "여자"
+          ],
+          "colCount": 2
+        },
+        {
+          "type": "text",
+          "name": "birth_date",
+          "title": "생년월일",
+          "inputType": "date",
+          "maxValueExpression": "today()",
+          "isRequired": true
+        },
+        {
+          "type": "radiogroup",
+          "name": "education",
+          "title": "최종학력",
+          "isRequired": true,
+          "choices": [
+            "중졸",
+            "고졸",
+            "대학 재학",
+            "대학 졸업",
+            "대학원 이상"
+          ]
+        },
+        {
+          "type": "dropdown",
+          "name": "diagnosis",
+          "title": "주된 정신과 진단명",
+          "choices": [
+            "진단 없음",
+            "우울장애",
+            "양극성 장애",
+            "불안장애",
+            "조현병",
+            "강박장애",
+            "기타"
+          ],
+          "showOtherItem": true,
+          "otherText": "기타"
+        },
+        {
+          "type": "checkbox",
+          "name": "medication_status",
+          "title": "현재 복용 약물 (다중 선택)",
+          "choices": [
+            {
+              "value": 0,
+              "text": "복용하지 않음"
+            },
+            {
+              "value": 1,
+              "text": "항우울제"
+            },
+            {
+              "value": 2,
+              "text": "벤조디아제핀"
+            },
+            {
+              "value": 3,
+              "text": "항정신병약물"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

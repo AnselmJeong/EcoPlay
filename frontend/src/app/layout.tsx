@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import Header from '@/components/Header';
-import { StagewiseToolbar } from '@stagewise/toolbar-next';
-import { ReactPlugin } from '@stagewise-plugins/react';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
@@ -26,7 +24,6 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen">
         <AuthProvider>
-          <StagewiseToolbar config={{ plugins: [ReactPlugin] }} />
           <Header />
           <main className="flex-grow">
             {children}

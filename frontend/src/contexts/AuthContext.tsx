@@ -70,6 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -90,6 +95,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const email = medicalRecordToEmail(medicalRecordNumber);
+      if (!auth) {
+        throw new Error('인증 서비스가 초기화되지 않았습니다.');
+      }
       await signInWithEmailAndPassword(auth, email, birthDate);
       
       toast({
@@ -123,6 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const email = medicalRecordToEmail(medicalRecordNumber);
+      if (!auth) {
+        throw new Error('인증 서비스가 초기화되지 않았습니다.');
+      }
       await createUserWithEmailAndPassword(auth, email, birthDate);
       
       toast({
@@ -146,6 +157,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      if (!auth) {
+        throw new Error('인증 서비스가 초기화되지 않았습니다.');
+      }
       await signOut(auth);
       toast({
         title: "로그아웃",

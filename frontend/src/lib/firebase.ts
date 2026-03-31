@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -18,6 +18,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Firebase 서비스 내보내기
-export const auth = getAuth(app);
+export const auth: Auth | null = typeof window !== 'undefined' ? getAuth(app) : null;
 export const db = getFirestore(app);
-export default app; 
+export default app;

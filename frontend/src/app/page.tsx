@@ -30,10 +30,10 @@ export default function LandingPage() {
 
       if (consentData.exists && consentData.consent_given) {
         const questionnaireStatus = await questionnaireAPI.checkStatus(medicalRecordNumber);
-        if (questionnaireStatus.completed) {
+        if (questionnaireStatus.demographic_completed) {
           router.push('/games');
         } else {
-          router.push('/questionnaire');
+          router.push('/questionnaire/demographic');
         }
       } else {
         router.push('/consent');
@@ -62,10 +62,10 @@ export default function LandingPage() {
 
             if (consentData.exists && consentData.consent_given) {
               const questionnaireStatus = await questionnaireAPI.checkStatus(medicalRecordNumber);
-              if (questionnaireStatus.completed) {
+              if (questionnaireStatus.demographic_completed) {
                 router.push('/games');
               } else {
-                router.push('/questionnaire');
+                router.push('/questionnaire/demographic');
               }
             } else {
               router.push('/consent');

@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // Firebase Auth 토큰 가져오기 함수
 async function getAuthToken(): Promise<string | null> {
   try {
-    const user = auth.currentUser;
+    const user = auth?.currentUser;
     if (user) {
       return await user.getIdToken();
     }
@@ -154,6 +154,8 @@ export const questionnaireAPI = {
   submitAnswers: async (data: {
     medicalRecordNumber: string;
     answers: Record<string, unknown>;
+    questionnaireName?: string;
+    completed?: boolean;
   }) => {
     return apiCall('/questionnaire/submit', {
       method: 'POST',
@@ -163,6 +165,10 @@ export const questionnaireAPI = {
 
   checkStatus: async (medicalRecordNumber: string) => {
     return apiCall(`/questionnaire/check/${medicalRecordNumber}`);
+  },
+
+  getDetail: async (medicalRecordNumber: string) => {
+    return apiCall(`/questionnaire/detail/${medicalRecordNumber}`);
   },
 };
 

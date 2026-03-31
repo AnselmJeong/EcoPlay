@@ -27,8 +27,8 @@ const Character = ({ name, amount, isPlayer = false, avatar, showAmount = true }
   const getAvatarContent = () => {
     if (isPlayer) {
       return (
-        <div className="w-16 h-16 rounded-full bg-green-100 border-4 border-green-300 flex items-center justify-center mb-2">
-          <User className="w-8 h-8 text-green-600" />
+        <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border-4 border-green-300 bg-green-100">
+          <User className="h-6 w-6 text-green-600" />
         </div>
       );
     }
@@ -41,8 +41,8 @@ const Character = ({ name, amount, isPlayer = false, avatar, showAmount = true }
     };
 
     return (
-      <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center mb-2 ${botColors[avatar] || 'bg-gray-100 border-gray-300 text-gray-600'}`}>
-        <Bot className="w-8 h-8" />
+      <div className={`mb-1 flex h-12 w-12 items-center justify-center rounded-full border-4 ${botColors[avatar] || 'bg-gray-100 border-gray-300 text-gray-600'}`}>
+        <Bot className="h-6 w-6" />
       </div>
     );
   };
@@ -50,10 +50,10 @@ const Character = ({ name, amount, isPlayer = false, avatar, showAmount = true }
   const displayAmount = showAmount ? amount : "?";
 
   return (
-    <div className="flex flex-col items-center p-4">
+    <div className="flex flex-col items-center rounded-2xl border border-slate-200/80 bg-white/80 px-3 py-3 shadow-sm">
       {getAvatarContent()}
-      <div className="bg-white rounded-lg shadow-md p-3 min-w-[80px] text-center border-2 border-gray-200">
-        <div className={`w-8 h-8 rounded-full ${isPlayer ? 'bg-green-500' : 'bg-orange-500'} text-white flex items-center justify-center text-sm font-bold mx-auto mb-1`}>
+      <div className="w-full min-w-[72px] text-center">
+        <div className={`mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white ${isPlayer ? 'bg-green-500' : 'bg-orange-500'}`}>
           {displayAmount}
         </div>
         <div className="text-sm font-medium text-gray-700">{name}</div>
@@ -77,22 +77,22 @@ const PublicGoodsBalanceChart = ({ playerBalance, botBalances }: {
   const playerNames = ['You', 'Bot 1', 'Bot 2', 'Bot 3', 'Bot 4'];
 
   return (
-    <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
-      <h3 className="text-lg font-semibold text-center mb-4 flex items-center justify-center gap-2">
-        <BarChart3 className="w-5 h-5" />
+    <div className="mt-4 rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 to-blue-50 p-4">
+      <h3 className="mb-3 flex items-center justify-center gap-2 text-base font-semibold">
+        <BarChart3 className="h-4 w-4" />
         플레이어별 현재 잔액
       </h3>
       
-      <div className="flex items-end justify-center gap-4 h-40">
+      <div className="flex h-28 items-end justify-center gap-3">
         {/* 사용자 막대 */}
         <div className="flex flex-col items-center">
-          <div className="text-sm font-medium text-gray-600 mb-2">You</div>
-          <div className="relative w-12 h-32 bg-gray-200 rounded-lg overflow-hidden border-2 border-gray-300">
+          <div className="mb-1 text-xs font-medium text-gray-600">You</div>
+          <div className="relative h-24 w-11 overflow-hidden rounded-lg border-2 border-gray-300 bg-gray-200">
             <div 
               className="absolute bottom-0 w-full bg-green-500 transition-all duration-500 ease-out rounded-b-lg flex items-start justify-center"
               style={{ height: `${playerHeight}%` }}
             >
-              <span className="text-white text-xs font-bold mt-1">{Math.round(playerBalance)}</span>
+              <span className="mt-1 text-[10px] font-bold text-white">{Math.round(playerBalance)}</span>
             </div>
           </div>
         </div>
@@ -100,13 +100,13 @@ const PublicGoodsBalanceChart = ({ playerBalance, botBalances }: {
         {/* 봇들 막대 */}
         {botBalances.map((balance, index) => (
           <div key={index} className="flex flex-col items-center">
-            <div className="text-sm font-medium text-gray-600 mb-2">Bot {index + 1}</div>
-            <div className="relative w-12 h-32 bg-gray-200 rounded-lg overflow-hidden border-2 border-gray-300">
+            <div className="mb-1 text-xs font-medium text-gray-600">Bot {index + 1}</div>
+            <div className="relative h-24 w-11 overflow-hidden rounded-lg border-2 border-gray-300 bg-gray-200">
               <div 
                 className={`absolute bottom-0 w-full ${playerColors[index + 1]} transition-all duration-500 ease-out rounded-b-lg flex items-start justify-center`}
                 style={{ height: `${botHeights[index]}%` }}
               >
-                <span className="text-white text-xs font-bold mt-1">{Math.round(balance)}</span>
+                <span className="mt-1 text-[10px] font-bold text-white">{Math.round(balance)}</span>
               </div>
             </div>
           </div>
@@ -119,18 +119,18 @@ const PublicGoodsBalanceChart = ({ playerBalance, botBalances }: {
 // Game results summary component
 const GameResultsSummary = ({ gameResult }: { gameResult: any }) => {
   return (
-    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-blue-200">
-      <h3 className="text-lg font-semibold text-center mb-4 flex items-center justify-center gap-2">
-        <DollarSign className="w-5 h-5" />
+    <div className="mt-4 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-green-50 p-4">
+      <h3 className="mb-3 flex items-center justify-center gap-2 text-base font-semibold">
+        <DollarSign className="h-4 w-4" />
         Round Results
       </h3>
       
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div className="text-center p-2 bg-white rounded border">
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="rounded border bg-white p-2 text-center">
           <div className="font-medium text-gray-600">Your Share</div>
           <div className="text-xl font-bold text-purple-600">{gameResult.share_per_player?.toFixed(1)}</div>
         </div>
-        <div className="text-center p-2 bg-white rounded border">
+        <div className="rounded border bg-white p-2 text-center">
           <div className="font-medium text-gray-600">Your Payoff</div>
           <div className={`text-xl font-bold ${gameResult.payoff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {gameResult.payoff >= 0 ? '+' : ''}{gameResult.payoff.toFixed(1)}
@@ -142,6 +142,7 @@ const GameResultsSummary = ({ gameResult }: { gameResult: any }) => {
 };
 
 export default function PublicGoodsGamePage() {
+  const [hasStarted, setHasStarted] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
   const [playerBalance, setPlayerBalance] = useState(INITIAL_POINTS);
   const [botBalances, setBotBalances] = useState([INITIAL_POINTS, INITIAL_POINTS, INITIAL_POINTS, INITIAL_POINTS]);
@@ -231,6 +232,11 @@ export default function PublicGoodsGamePage() {
     setMaxDonation(Math.floor(playerBalance / 2)); // 새로운 라운드의 최대 기부액 업데이트
   };
 
+  const handleStartGame = () => {
+    setHasStarted(true);
+    setStartTime(Date.now());
+  };
+
   if (isGameFinished) {
     return (
       <GameLayout title={gameTitle} rules={gameRules} playerBalance={playerBalance}>
@@ -257,20 +263,61 @@ export default function PublicGoodsGamePage() {
     );
   }
 
+  if (!hasStarted) {
+    return (
+      <GameLayout
+        title={gameTitle}
+        rules={gameRules}
+        currentRound={currentRound}
+        totalRounds={TOTAL_ROUNDS}
+        playerBalance={playerBalance}
+      >
+        <Card className="mx-auto w-full max-w-2xl border-none shadow-none bg-transparent">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-center font-headline text-2xl text-primary">
+              Ready to Begin?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5 text-center">
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-foreground/80">
+              규칙을 확인했다면 게임을 시작하세요. 시작 후에는 게임 화면만 표시되어 더 집중해서 진행할 수 있습니다.
+            </p>
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4">
+              <div className="text-sm text-primary/70">Starting Balance</div>
+              <div className="mt-1 text-3xl font-bold text-primary">{playerBalance} points</div>
+            </div>
+            <Button
+              onClick={handleStartGame}
+              className="bg-primary px-8 py-3 text-base text-primary-foreground hover:bg-primary/90"
+            >
+              Start Game
+            </Button>
+          </CardContent>
+        </Card>
+      </GameLayout>
+    );
+  }
+
   return (
-    <GameLayout title={gameTitle} rules={gameRules} currentRound={currentRound} totalRounds={TOTAL_ROUNDS} playerBalance={playerBalance}>
-      <div className="space-y-6">
+    <GameLayout
+      title={gameTitle}
+      rules={gameRules}
+      currentRound={currentRound}
+      totalRounds={TOTAL_ROUNDS}
+      playerBalance={playerBalance}
+      showSidebar={false}
+    >
+      <div className="space-y-4">
         {/* Characters Display */}
         <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline text-xl text-center text-primary flex items-center justify-center gap-2">
-              <Coins className="w-6 h-6" />
+          <CardHeader className="pb-4">
+            <CardTitle className="font-headline flex items-center justify-center gap-2 text-lg text-primary">
+              <Coins className="h-5 w-5" />
               Players in this Round
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* Player Character */}
-            <div className="flex justify-center mb-6">
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               <Character 
                 name="You" 
                 amount={gameResult ? gameResult.user_donation : (donation[0] > 0 ? donation[0] : "?")} 
@@ -278,10 +325,6 @@ export default function PublicGoodsGamePage() {
                 avatar="user"
                 showAmount={true}
               />
-            </div>
-            
-            {/* Bot Characters */}
-            <div className="flex justify-center items-center gap-4 flex-wrap">
               <Character 
                 name="Bot 1" 
                 amount={gameResult ? gameResult.other_donations?.[0] : "?"} 
@@ -321,20 +364,19 @@ export default function PublicGoodsGamePage() {
 
         {/* Game Controls */}
         <Card className="shadow-lg animate-fadeIn">
-          <CardHeader>
-            <CardTitle className="font-headline text-xl text-center text-primary">
+          <CardHeader className="pb-4">
+            <CardTitle className="font-headline text-center text-lg text-primary">
               Your Decision
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 pt-0">
             {!gameResult ? (
               <>
-                {/* Donation Slider */}
-                <div className="space-y-4">
-                  <Label className="font-body text-lg text-center block">
+                <div className="space-y-3">
+                  <Label className="block text-center font-body text-base leading-relaxed">
                     How much would you like to donate to the common account?
                   </Label>
-                  <div className="px-4 max-w-sm mx-auto">
+                  <div className="mx-auto max-w-xl px-4">
                     <Slider
                       value={donation}
                       onValueChange={setDonation}
@@ -344,29 +386,27 @@ export default function PublicGoodsGamePage() {
                       className="w-full"
                     />
                   </div>
-                  <div className="flex justify-between text-sm text-foreground/70 max-w-sm mx-auto px-4">
+                  <div className="mx-auto flex max-w-xl justify-between px-4 text-sm text-foreground/70">
                     <span>0 points</span>
                     <span className="font-semibold">Current: {donation[0]} points</span>
                     <span>{maxDonation} points (max)</span>
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <div className="text-center">
                   <Button 
                     onClick={handleSubmit} 
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-3 px-8"
+                    className="bg-primary px-8 py-2.5 text-base text-primary-foreground hover:bg-primary/90"
                   >
                     Submit Donation
                   </Button>
                 </div>
               </>
             ) : (
-              /* Next Round Button */
               <div className="text-center">
                 <Button 
                   onClick={handleNextRound} 
-                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-3 px-8"
+                  className="bg-accent px-8 py-2.5 text-base text-accent-foreground hover:bg-accent/90"
                 >
                   Next Round <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>

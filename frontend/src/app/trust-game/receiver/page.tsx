@@ -26,15 +26,15 @@ const Character = ({ name, amount, isPlayer = false, role, showAmount = true }: 
   const getAvatarContent = () => {
     if (isPlayer) {
       return (
-        <div className="w-20 h-20 rounded-full bg-green-100 border-4 border-green-300 flex items-center justify-center mb-3">
-          <User className="w-10 h-10 text-green-600" />
+        <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border-4 border-green-300 bg-green-100">
+          <User className="h-6 w-6 text-green-600" />
         </div>
       );
     }
 
     return (
-      <div className="w-20 h-20 rounded-full bg-blue-100 border-4 border-blue-300 flex items-center justify-center mb-3">
-        <Bot className="w-10 h-10 text-blue-600" />
+      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border-4 border-blue-300 bg-blue-100">
+        <Bot className="h-6 w-6 text-blue-600" />
       </div>
     );
   };
@@ -43,10 +43,10 @@ const Character = ({ name, amount, isPlayer = false, role, showAmount = true }: 
   const roleColor = role === 'sender' ? 'bg-blue-500' : 'bg-green-500';
 
   return (
-    <div className="flex flex-col items-center p-4">
+    <div className="flex flex-col items-center rounded-2xl border border-slate-200/80 bg-white/80 px-3 py-3 shadow-sm">
       {getAvatarContent()}
-      <div className="bg-white rounded-lg shadow-md p-4 min-w-[100px] text-center border-2 border-gray-200">
-        <div className={`w-20 h-20 rounded-full ${roleColor} text-white flex items-center justify-center text-lg font-bold mx-auto mb-2`}>
+      <div className="w-full min-w-[92px] text-center">
+        <div className={`mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white ${roleColor}`}>
           {displayAmount}
         </div>
         <div className="text-sm font-medium text-gray-700">{name}</div>
@@ -66,35 +66,35 @@ const BalanceChart = ({ playerBalance, opponentBalance }: {
   const opponentHeight = (opponentBalance / maxBalance) * 100;
 
   return (
-    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200">
-      <h3 className="text-lg font-semibold text-center mb-4 flex items-center justify-center gap-2">
-        <TrendingUp className="w-5 h-5" />
+    <div className="mt-4 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 p-4">
+      <h3 className="mb-3 flex items-center justify-center gap-2 text-base font-semibold">
+        <TrendingUp className="h-4 w-4" />
         현재 잔액
       </h3>
       
-      <div className="flex items-end justify-center gap-8 h-40">
+      <div className="flex h-28 items-end justify-center gap-6">
         {/* 송신자 막대 */}
         <div className="flex flex-col items-center">
-          <div className="text-sm font-medium text-gray-600 mb-2">송신자</div>
-          <div className="relative w-16 h-32 bg-gray-200 rounded-lg overflow-hidden border-2 border-gray-300">
+          <div className="mb-1 text-xs font-medium text-gray-600">송신자</div>
+          <div className="relative h-24 w-11 overflow-hidden rounded-lg border-2 border-gray-300 bg-gray-200">
             <div 
               className="absolute bottom-0 w-full bg-blue-500 transition-all duration-500 ease-out rounded-b-lg flex items-start justify-center"
               style={{ height: `${opponentHeight}%` }}
             >
-              <span className="text-gray-800 text-xs font-bold mt-1">{opponentBalance}</span>
+              <span className="mt-1 text-[10px] font-bold text-white">{opponentBalance}</span>
             </div>
           </div>
         </div>
         
         {/* 수신자 막대 */}
         <div className="flex flex-col items-center">
-          <div className="text-sm font-medium text-gray-600 mb-2">수신자</div>
-          <div className="relative w-16 h-32 bg-gray-200 rounded-lg overflow-hidden border-2 border-gray-300">
+          <div className="mb-1 text-xs font-medium text-gray-600">수신자</div>
+          <div className="relative h-24 w-11 overflow-hidden rounded-lg border-2 border-gray-300 bg-gray-200">
             <div 
               className="absolute bottom-0 w-full bg-green-500 transition-all duration-500 ease-out rounded-b-lg flex items-start justify-center"
               style={{ height: `${playerHeight}%` }}
             >
-              <span className="text-gray-800 text-xs font-bold mt-1">{playerBalance}</span>
+              <span className="mt-1 text-[10px] font-bold text-white">{playerBalance}</span>
             </div>
           </div>
         </div>
@@ -106,24 +106,24 @@ const BalanceChart = ({ playerBalance, opponentBalance }: {
 // Trust game results summary component
 const TrustGameResultsSummary = ({ gameResult }: { gameResult: any }) => {
   return (
-    <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
-      <h3 className="text-lg font-semibold text-center mb-4 flex items-center justify-center gap-2">
-        <DollarSign className="w-5 h-5" />
+    <div className="mt-4 rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 to-blue-50 p-4">
+      <h3 className="mb-3 flex items-center justify-center gap-2 text-base font-semibold">
+        <DollarSign className="h-4 w-4" />
         라운드 결과
       </h3>
       
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div className="text-center p-3 bg-white rounded border">
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="rounded border bg-white p-2 text-center">
           <div className="font-medium text-gray-600">받은 금액</div>
           <div className="text-xl font-bold text-blue-600">{gameResult.received_amount}</div>
         </div>
-        <div className="text-center p-3 bg-white rounded border">
+        <div className="rounded border bg-white p-2 text-center">
           <div className="font-medium text-gray-600">돌려준 금액</div>
           <div className="text-xl font-bold text-green-600">{gameResult.return_amount}</div>
         </div>
       </div>
       
-      <div className="mt-3 p-3 bg-white rounded border text-center">
+      <div className="mt-3 rounded border bg-white p-3 text-center">
         <div className="font-medium text-gray-600">순수익</div>
         <div className="text-2xl font-bold text-purple-600">{gameResult.kept_amount}</div>
       </div>
@@ -132,6 +132,7 @@ const TrustGameResultsSummary = ({ gameResult }: { gameResult: any }) => {
 };
 
 export default function TrustGameReceiverPage() {
+  const [hasStarted, setHasStarted] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
   const [playerBalance, setPlayerBalance] = useState(INITIAL_BALANCE);
   const [opponentBalance, setOpponentBalance] = useState(INITIAL_BALANCE); // 송신자 잔액 추적
@@ -227,6 +228,11 @@ export default function TrustGameReceiverPage() {
     setStartTime(Date.now()); // 다음 라운드 시작 시간 초기화
   };
 
+  const handleStartGame = () => {
+    setHasStarted(true);
+    setStartTime(Date.now());
+  };
+
   if (isGameFinished) {
     return (
       <GameLayout title={gameTitle} rules={gameRules} playerBalance={playerBalance}>
@@ -255,20 +261,62 @@ export default function TrustGameReceiverPage() {
     );
   }
 
+  if (!hasStarted) {
+    return (
+      <GameLayout
+        title={gameTitle}
+        rules={gameRules}
+        currentRound={currentRound}
+        totalRounds={TOTAL_ROUNDS}
+        playerBalance={playerBalance}
+      >
+        <Card className="mx-auto w-full max-w-2xl border-none bg-transparent shadow-none">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-center font-headline text-2xl text-primary">
+              Ready to Begin?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5 text-center">
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-foreground/80">
+              규칙을 확인했다면 게임을 시작하세요. 시작 후에는 설명 영역 없이 게임 화면만 보여 더 집중해서 진행할 수 있습니다.
+            </p>
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4">
+              <div className="text-sm text-primary/70">Starting Balance</div>
+              <div className="mt-1 text-3xl font-bold text-primary">{playerBalance} points</div>
+            </div>
+            <Button
+              onClick={handleStartGame}
+              className="bg-primary px-8 py-3 text-base text-primary-foreground hover:bg-primary/90"
+            >
+              Start Game
+            </Button>
+          </CardContent>
+        </Card>
+      </GameLayout>
+    );
+  }
+
   return (
-    <GameLayout title={gameTitle} rules={gameRules} currentRound={currentRound} totalRounds={TOTAL_ROUNDS} playerBalance={playerBalance}>
-      <div className="space-y-6">
+    <GameLayout
+      title={gameTitle}
+      rules={gameRules}
+      currentRound={currentRound}
+      totalRounds={TOTAL_ROUNDS}
+      playerBalance={playerBalance}
+      showSidebar={false}
+    >
+      <div className="space-y-4">
         {/* Characters Display */}
         <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline text-xl text-center text-primary flex items-center justify-center gap-2">
-              <HandHeart className="w-6 h-6" />
+          <CardHeader className="pb-4">
+            <CardTitle className="font-headline text-lg text-center text-primary flex items-center justify-center gap-2">
+              <HandHeart className="w-5 h-5" />
               라운드 {currentRound} - Trust Game
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {/* Game Flow Visualization */}
-            <div className="flex justify-center items-center gap-8 mb-6">
+            <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
               <Character 
                 name="송신자 (Bot)" 
                 amount={`보냄 ${Math.floor(receivedFromSender/3)}`} 
@@ -277,11 +325,11 @@ export default function TrustGameReceiverPage() {
                 showAmount={true}
               />
               
-              <div className="flex flex-col items-center">
-                <ArrowLeftRight className="w-8 h-8 text-blue-500 mb-2" />
+              <div className="flex min-w-[120px] flex-col items-center">
+                <ArrowLeftRight className="mb-2 h-7 w-7 text-blue-500" />
                 <div className="text-sm text-gray-600 text-center">
                   <div>받은 금액</div>
-                  <div className="font-bold text-3xl text-blue-600">{receivedFromSender}</div>
+                  <div className="font-bold text-2xl text-blue-600">{receivedFromSender}</div>
                   <div className="text-xs">(3배 증가)</div>
                 </div>
               </div>
@@ -303,44 +351,6 @@ export default function TrustGameReceiverPage() {
 
             {/* Game Results Summary */}
             {roundResult && <TrustGameResultsSummary gameResult={roundResult} />}
-
-            {/* Game Controls - Slider Section */}
-            {!roundResult && (
-              <div className="mt-6 w-full max-w-md mx-auto space-y-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600 mb-2">{receivedFromSender}포인트</div>
-                  <p className="text-sm text-gray-600">송신자로부터 받은 금액</p>
-                </div>
-                
-                <div className="space-y-4">
-                  <Label className="font-body text-lg block text-center">
-                    돌려줄 금액: <span className="font-bold text-green-600">{returnAmount[0]}포인트</span>
-                  </Label>
-                  
-                  <Slider
-                    value={returnAmount}
-                    onValueChange={setReturnAmount}
-                    max={maxReturn}
-                    min={0}
-                    step={1}
-                    className="w-full"
-                  />
-                  
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>0</span>
-                    <span className="font-medium">수익: {maxReturn - returnAmount[0]}포인트</span>
-                    <span>{maxReturn}</span>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={handleSubmit} 
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg py-3"
-                >
-                  결정하기 <Send className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-            )}
           </CardContent>
           {roundResult && (
             <CardFooter className="justify-center">
@@ -353,6 +363,54 @@ export default function TrustGameReceiverPage() {
             </CardFooter>
           )}
         </Card>
+
+        {!roundResult && (
+          <Card className="shadow-lg animate-fadeIn">
+            <CardHeader className="pb-4">
+              <CardTitle className="font-headline text-center text-lg text-primary">
+                Your Decision
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-0">
+              <div className="text-center">
+                <div className="mb-1 text-2xl font-bold text-blue-600">{receivedFromSender}포인트</div>
+                <p className="text-sm text-gray-600">송신자로부터 받은 금액</p>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="block text-center font-body text-base leading-relaxed">
+                  돌려줄 금액: <span className="font-bold text-green-600">{returnAmount[0]}포인트</span>
+                </Label>
+
+                <div className="mx-auto max-w-xl px-4">
+                  <Slider
+                    value={returnAmount}
+                    onValueChange={setReturnAmount}
+                    max={maxReturn}
+                    min={0}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="mx-auto flex max-w-xl justify-between px-4 text-sm text-gray-500">
+                  <span>0</span>
+                  <span className="font-medium">수익: {maxReturn - returnAmount[0]}포인트</span>
+                  <span>{maxReturn}</span>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <Button 
+                  onClick={handleSubmit} 
+                  className="bg-primary px-8 py-2.5 text-base text-primary-foreground hover:bg-primary/90"
+                >
+                  결정하기 <Send className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </GameLayout>
   );

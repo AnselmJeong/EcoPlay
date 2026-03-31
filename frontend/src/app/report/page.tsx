@@ -24,6 +24,16 @@ interface StatsCard {
   highlight?: boolean;
 }
 
+function getRoundTicks(data: GameData[]) {
+  return Array.from(
+    new Set(
+      data
+        .map((item) => item.round)
+        .filter((round): round is number => typeof round === "number")
+    )
+  ).sort((a, b) => a - b);
+}
+
 export default function ReportPage() {
   const [publicGoodsData, setPublicGoodsData] = useState<GameData[]>([]);
   const [trustGameReceiverData, setTrustGameReceiverData] = useState<GameData[]>([]);
@@ -408,7 +418,14 @@ export default function ReportPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={formatChartData(trustGameReceiverData, 'trust-game', 'trustee', 'left')}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="round" />
+                            <XAxis
+                              dataKey="round"
+                              type="number"
+                              scale="linear"
+                              domain={['dataMin', 'dataMax']}
+                              ticks={getRoundTicks(trustGameReceiverData)}
+                              allowDuplicatedCategory={false}
+                            />
                             <YAxis />
                             <Tooltip />
                             <Legend />
@@ -437,7 +454,14 @@ export default function ReportPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={formatChartData(trustGameReceiverData, 'trust-game', 'trustee', 'right')}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="round" />
+                            <XAxis
+                              dataKey="round"
+                              type="number"
+                              scale="linear"
+                              domain={['dataMin', 'dataMax']}
+                              ticks={getRoundTicks(trustGameReceiverData)}
+                              allowDuplicatedCategory={false}
+                            />
                             <YAxis />
                             <Tooltip />
                             <Legend />
@@ -513,6 +537,8 @@ export default function ReportPage() {
                               type="number"
                               scale="linear"
                               domain={['dataMin', 'dataMax']}
+                              ticks={getRoundTicks(trustGameTrusteeData)}
+                              allowDuplicatedCategory={false}
                             />
                             <YAxis />
                             <Tooltip />
@@ -547,6 +573,8 @@ export default function ReportPage() {
                               type="number"
                               scale="linear"
                               domain={['dataMin', 'dataMax']}
+                              ticks={getRoundTicks(trustGameTrusteeData)}
+                              allowDuplicatedCategory={false}
                             />
                             <YAxis />
                             <Tooltip />

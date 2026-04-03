@@ -52,6 +52,23 @@ class PGGSessionService:
         self.db = db
         self.config = get_game_config()
 
+    def _get_previous_participant_contribution(self, session_id: str, trial_index: int) -> float | None:
+        if trial_index <= 1:
+            return None
+
+        previous_trial_docs = (
+            self.db.collection(PGG_TRIALS)
+            .where("session_id", "==", session_id)
+            .where("pgg_trial_index", "==", trial_index - 1)
+            .limit(1)
+            .stream()
+        )
+        previous_trial = next(previous_trial_docs, None)
+        if previous_trial is None:
+            return None
+
+        return float(previous_trial.to_dict()["pgg_contribution"])
+
     def start_session(self, user_id: str) -> dict[str, Any]:
         session_id = build_session_id("pgg")
         seed = random.randint(1, 2_147_483_647)
@@ -111,7 +128,12 @@ class PGGSessionService:
 
         trial_index = session["completed_trials_count"] + 1
         engine = PGGEngine(self.config.pgg, session["seed"])
-        trial_result = engine.simulate_trial(contribution, trial_index)
+        previous_participant_contribution = self._get_previous_participant_contribution(session_id, trial_index)
+        trial_result = engine.simulate_trial(
+            contribution,
+            trial_index,
+            previous_participant_contribution=previous_participant_contribution,
+        )
         cumulative_payoff = round(session["cumulative_payoff"] + trial_result.participant_trial_payoff, 2)
 
         trial_data = {

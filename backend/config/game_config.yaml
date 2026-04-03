@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 
 pgg:
   trials: 15
@@ -7,8 +7,22 @@ pgg:
   group_size: 5
   multiplier: 1.5
   simulated_agents:
+    strategy: "conditional_cooperation"
     contribution_range: [0.05, 0.45]
-    strategy: "uniform_random"
+    reference_contribution_ratio: 0.25
+    bots:
+      - name: "Stable Cooperator"
+        base_contribution_ratio: 0.18
+        responsiveness: 0.30
+      - name: "Reciprocator"
+        base_contribution_ratio: 0.20
+        responsiveness: 0.55
+      - name: "Wait-and-See"
+        base_contribution_ratio: 0.12
+        responsiveness: 0.70
+      - name: "Optimistic Cooperator"
+        base_contribution_ratio: 0.26
+        responsiveness: 0.40
 
 tutorial:
   trials: 10

@@ -23,7 +23,7 @@ export default function PublicGoodsGamePage() {
     '각 trial마다 10포인트가 주어집니다.',
     '총 15번의 trial 동안 공공 풀에 기여할 금액을 결정합니다.',
     '모든 기여금은 1.5배가 된 뒤 5명에게 균등 분배됩니다.',
-    '각 trial은 독립적이며 누적 payoff만 계속 더해집니다.',
+    '각 trial의 payoff는 개별적으로 계산되고, 총 payoff는 계속 누적됩니다.',
   ];
 
   useEffect(() => {

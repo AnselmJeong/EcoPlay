@@ -1,613 +1,340 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { reportAPI } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface GameData {
-  round: number;
-  donation?: number;
-  received_amount?: number;
-  return_amount?: number;
-  investment?: number;
-  current_balance?: number;
-  partner_contribution?: number;
-}
+type PGGRound = {
+  pgg_trial_index: number;
+  pgg_contribution: number;
+  pgg_feedback_amount: number;
+  participant_total_payoff_this_trial: number;
+  cumulative_payoff: number;
+};
 
-interface StatsCard {
+type TutorialRound = {
+  trial_index: number;
+  amount_received: number;
+  return_amount: number;
+  amount_kept: number;
+};
+
+type RTGRound = {
+  rtg_trial_index: number;
+  rtg_block_index: number;
+  partner_public_label: string;
+  amount_sent: number;
+  partner_return_amount: number;
+  participant_total_payoff_this_trial: number;
+  cumulative_payoff: number;
+};
+
+type StatsCard = {
   title: string;
   value: string;
-  unit: string;
-  highlight?: boolean;
+  hint: string;
+};
+
+function StatsGrid({ items }: { items: StatsCard[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {items.map((item) => (
+        <Card key={item.title} className="shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-slate-500">{item.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">{item.value}</div>
+            <div className="mt-1 text-xs text-slate-500">{item.hint}</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 }
 
-function getRoundTicks(data: GameData[]) {
-  return Array.from(
-    new Set(
-      data
-        .map((item) => item.round)
-        .filter((round): round is number => typeof round === "number")
-    )
-  ).sort((a, b) => a - b);
+function EmptyState({ message }: { message: string }) {
+  return (
+    <Card className="shadow-sm">
+      <CardContent className="py-10 text-center text-slate-500">{message}</CardContent>
+    </Card>
+  );
 }
 
 export default function ReportPage() {
-  const [publicGoodsData, setPublicGoodsData] = useState<GameData[]>([]);
-  const [trustGameReceiverData, setTrustGameReceiverData] = useState<GameData[]>([]);
-  const [trustGameTrusteeData, setTrustGameTrusteeData] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { getMedicalRecordNumber, user, loading: authLoading } = useAuth();
+  const [overview, setOverview] = useState<any>(null);
+  const [pggReport, setPggReport] = useState<any>(null);
+  const [tutorialReport, setTutorialReport] = useState<any>(null);
+  const [rtgReport, setRtgReport] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Auth 상태가 로딩 중이면 기다림
-    if (authLoading) return;
-    
-    // Auth 로딩이 완료된 후 데이터 로드
-    loadGameData();
-  }, [authLoading]);
+    if (authLoading || !user) return;
 
-  const loadGameData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // 디버깅: 사용자 정보 확인
-      console.log('Auth Loading:', authLoading);
-      console.log('User:', user);
-      console.log('User email:', user?.email);
-      
-      const medicalRecordNumber = getMedicalRecordNumber();
-      console.log('Medical Record Number:', medicalRecordNumber);
-      
-      if (!medicalRecordNumber) {
-        throw new Error('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
-      }
-
-      // 백엔드 API에서 게임 데이터 가져오기
-      console.log('백엔드 API에서 데이터 조회 시작...');
-      
+    const loadReports = async () => {
       try {
-        const pgReport = await reportAPI.getPublicGoodsReport();
-        console.log('Public Goods Report:', pgReport);
-        setPublicGoodsData(pgReport.rounds || []);
-      } catch (pgError) {
-        console.error('Public Goods 데이터 조회 오류:', pgError);
-        setPublicGoodsData([]);
+        setLoading(true);
+        setError(null);
+
+        const [overviewResult, pggResult, tutorialResult, rtgResult] = await Promise.all([
+          reportAPI.getAllGamesReport(),
+          reportAPI.getPublicGoodsReport(),
+          reportAPI.getRTGTutorialReport(),
+          reportAPI.getTrustGameReport(),
+        ]);
+
+        setOverview(overviewResult);
+        setPggReport(pggResult);
+        setTutorialReport(tutorialResult);
+        setRtgReport(rtgResult);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : '리포트를 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      try {
-        const tgReport = await reportAPI.getTrustGameReport();
-        console.log('Trust Game Report:', tgReport);
-        
-        // 역할별로 데이터 분리 - Firebase role 기준
-        const trusteeGameData = tgReport.rounds?.filter((round: any) => round.role === 'trustee') || [];
-        const trustorGameData = tgReport.rounds?.filter((round: any) => round.role === 'trustor') || [];
-        
-        console.log('Trustee Game Data (User는 Trustee):', trusteeGameData.length);
-        console.log('Trustor Game Data (User는 Trustor):', trustorGameData.length);
-        
-        setTrustGameReceiverData(trusteeGameData);  // User가 Trustee인 게임 (10라운드)
-        setTrustGameTrusteeData(trustorGameData);   // User가 Trustor인 게임 (40라운드)
-      } catch (tgError) {
-        console.error('Trust Game 데이터 조회 오류:', tgError);
-        setTrustGameReceiverData([]);
-        setTrustGameTrusteeData([]);
-      }
+    void loadReports();
+  }, [authLoading, user]);
 
-      console.log('모든 데이터 조회 완료');
-    } catch (error: any) {
-      console.error('Failed to load game data:', error);
-      setError(error.message || '게임 데이터를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculatePublicGoodsStats = (): StatsCard[] => {
-    if (publicGoodsData.length === 0) return [];
-    
-    const avgDonation = publicGoodsData.reduce((sum, d) => sum + (d.donation || 0), 0) / publicGoodsData.length;
-    const avgPartnerContrib = publicGoodsData.reduce((sum, d) => sum + (d.partner_contribution || 0), 0) / publicGoodsData.length / 4;
-    const totalEarnings = publicGoodsData.reduce((sum, d) => sum + (d.current_balance || 0), 0);
-    const avgEarnings = totalEarnings / publicGoodsData.length;
-
-    return [
-      { title: '당신의\n평균 기부액', value: avgDonation.toFixed(0), unit: '포인트' },
-      { title: '상대방의\n평균 기부액', value: avgPartnerContrib.toFixed(0), unit: '포인트', highlight: true },
-      { title: '당신의\n총 수익', value: totalEarnings.toFixed(1), unit: '포인트' },
-      { title: '라운드 당\n평균 수익', value: avgEarnings.toFixed(1), unit: '포인트' },
-    ];
-  };
-
-  const calculateTrustGameStats = (data: GameData[]): StatsCard[] => {
-    if (data.length === 0) return [];
-    
-    const avgInvestment = data.reduce((sum, d) => sum + (d.investment || 0), 0) / data.length;
-    const avgReceived = data.reduce((sum, d) => sum + (d.received_amount || 0), 0) / data.length;
-    const avgReturn = data.reduce((sum, d) => sum + (d.return_amount || 0), 0) / data.length;
-    const totalEarnings = data.reduce((sum, d) => sum + (d.current_balance || 0), 0);
-    const maxBalance = data.length > 0 ? Math.max(...data.map(d => d.current_balance || 0)) : 0;
-
-    return [
-      { title: '상대가 보낸\n포인트', value: avgInvestment.toFixed(2), unit: '포인트' },
-      { title: '당신이 돌려준\n포인트', value: avgReturn.toFixed(2), unit: '포인트', highlight: true },
-      { title: '당신의\n순수익', value: avgReceived.toFixed(0), unit: '포인트' },
-      { title: '당신의\n총 수익', value: totalEarnings.toFixed(2), unit: '포인트', highlight: true },
-      { title: '당신의\n최고 라운드 수익', value: maxBalance.toFixed(0), unit: '포인트' },
-    ];
-  };
-
-  // User가 Trustee인 게임 (받아서 돌려주는 역할) 통계
-  const calculateTrusteeGameStats = (data: GameData[]): StatsCard[] => {
-    if (data.length === 0) return [];
-    
-    const avgReceived = data.reduce((sum, d) => sum + (d.received_amount || 0), 0) / data.length;
-    const avgReturned = data.reduce((sum, d) => sum + (d.return_amount || 0), 0) / data.length;
-    const avgKept = data.reduce((sum, d) => sum + (d.current_balance || 0), 0) / data.length;
-    const totalKept = data.reduce((sum, d) => sum + (d.current_balance || 0), 0);
-
-    return [
-      { title: 'Bot이 보낸\n평균 포인트', value: avgReceived.toFixed(1), unit: '포인트' },
-      { title: '당신이 돌려준\n평균 포인트', value: avgReturned.toFixed(1), unit: '포인트', highlight: true },
-      { title: '라운드 당\n평균 수익', value: avgKept.toFixed(1), unit: '포인트' },
-      { title: '당신의\n총 수익', value: totalKept.toFixed(1), unit: '포인트', highlight: true },
-    ];
-  };
-
-  // User가 Trustor인 게임 (투자하는 역할) 통계  
-  const calculateTrustorGameStats = (data: GameData[]): StatsCard[] => {
-    if (data.length === 0) return [];
-    
-    const avgInvestment = data.reduce((sum, d) => sum + (d.investment || 0), 0) / data.length;
-    const avgReceived = data.reduce((sum, d) => sum + (d.received_amount || 0), 0) / data.length;
-    const totalProfit = data.reduce((sum, d) => sum + (d.current_balance || 0), 0);
-    const avgProfit = totalProfit / data.length;
-
-    return [
-      { title: '당신의 평균\n투자 포인트', value: avgInvestment.toFixed(1), unit: '포인트', highlight: true },
-      { title: 'Bot이 돌려준\n평균 포인트', value: avgReceived.toFixed(1), unit: '포인트' },
-      { title: '당신의\n총 수익', value: totalProfit.toFixed(1), unit: '포인트', highlight: true },
-      { title: '라운드 당\n평균 수익', value: avgProfit.toFixed(1), unit: '포인트' },
-    ];
-  };
-
-  const formatChartData = (data: GameData[], type: 'public-goods' | 'trust-game', gameVersion?: 'trustee' | 'trustor', chartType?: 'left' | 'right') => {
-    if (type === 'public-goods') {
-      return data.map(d => ({
-        round: d.round,
-        '당신의 수익': d.current_balance,
-        '당신의 기부액': d.donation,
-      }));
-    } else {
-      // Trust Game - 게임 버전과 차트 위치에 따라 다른 데이터 표시
-      if (gameVersion === 'trustor') {
-        // User가 Trustor인 게임 (투자하는 사람)
-        if (chartType === 'left') {
-          // 왼쪽 차트: 보낸 포인트와 돌려받은 포인트
-          return data.map(d => ({
-            round: d.round,
-            '보낸 포인트': d.investment,
-            '돌려받은 포인트': d.received_amount,
-          }));
-        } else {
-          // 오른쪽 차트: 사용자와 Bot의 순수익 비교
-          return data.map(d => ({
-            round: d.round,
-            '당신의 순손익': d.current_balance,
-            'Bot의 순수익': d.investment ? ((d.investment * 3) - (d.received_amount || 0)) : 0, // Bot이 받은 금액(투자액×3) - Bot이 돌려준 금액
-          }));
-        }
-      } else {
-        // User가 Trustee인 게임 (받아서 돌려주는 사람)
-        if (chartType === 'left') {
-          // 왼쪽 차트: 보낸 포인트와 돌려준 포인트
-          return data.map(d => ({
-            round: d.round,
-            '보낸 포인트': d.received_amount,
-            '돌려준 포인트': d.return_amount,
-          }));
-        } else {
-          // 오른쪽 차트: 사용자와 Bot의 순수익 비교
-          return data.map(d => ({
-            round: d.round,
-            '당신의 순수익': d.current_balance,
-            'Bot의 순수익': d.return_amount ? ((d.return_amount || 0) - ((d.received_amount || 0) / 3)) : -((d.received_amount || 0) / 3), // Bot이 돌려받은 금액 - Bot이 실제 투자한 금액(received_amount/3)
-          }));
-        }
-      }
-    }
-  };
-
-  if (authLoading) {
+  if (authLoading || loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">인증 상태 확인 중...</div>
-        </div>
+      <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4 py-10">
+        <div className="text-slate-500">리포트를 불러오는 중입니다...</div>
       </div>
     );
   }
 
-  // 로그인되지 않은 경우
   if (!user) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-lg text-red-600 mb-4">로그인이 필요합니다</div>
-            <div className="text-sm text-gray-600 mb-4">
-              게임 결과를 보려면 먼저 로그인해주세요.
-            </div>
-            <button 
-              onClick={() => window.location.href = '/'}
-              className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
-            >
-              메인 페이지로 이동
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">로딩 중...</div>
-        </div>
+      <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4 py-10">
+        <div className="text-slate-500">리포트를 보려면 먼저 로그인해주세요.</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="text-lg text-red-600 mb-4">오류가 발생했습니다</div>
-            <div className="text-sm text-gray-600 mb-4">{error}</div>
-            {/* 디버깅 정보 */}
-            <div className="text-xs text-gray-500">
-              사용자: {getMedicalRecordNumber()} | 이메일: {user?.email}
-            </div>
-            <button 
-              onClick={loadGameData}
-              className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
-            >
-              다시 시도
-            </button>
-          </div>
-        </div>
+      <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4 py-10">
+        <div className="text-red-600">{error}</div>
       </div>
     );
   }
 
+  const pggRounds = (pggReport?.rounds ?? []) as PGGRound[];
+  const tutorialRounds = (tutorialReport?.rounds ?? []) as TutorialRound[];
+  const rtgRounds = (rtgReport?.rounds ?? []) as RTGRound[];
+
+  const pggStats: StatsCard[] = pggReport?.summary
+    ? [
+        {
+          title: 'Total Contribution',
+          value: pggReport.summary.total_contribution.toFixed(2),
+          hint: `${pggReport.summary.total_rounds} / ${pggReport.summary.expected_rounds} trials`,
+        },
+        {
+          title: 'Total Feedback',
+          value: pggReport.summary.total_feedback.toFixed(2),
+          hint: '받아온 공공 풀 보상 합계',
+        },
+        {
+          title: 'Cumulative Payoff',
+          value: pggReport.summary.cumulative_payoff.toFixed(2),
+          hint: '최종 누적 payoff',
+        },
+      ]
+    : [];
+
+  const tutorialStats: StatsCard[] = tutorialReport?.summary
+    ? [
+        {
+          title: 'Tutorial Trials',
+          value: `${tutorialReport.summary.total_rounds}`,
+          hint: `${tutorialReport.summary.expected_rounds} expected`,
+        },
+        {
+          title: 'Comprehension',
+          value: tutorialReport.summary.comprehension_check_passed ? 'Passed' : 'Pending',
+          hint: '이해도 점검 상태',
+        },
+      ]
+    : [];
+
+  const rtgStats: StatsCard[] = rtgReport?.summary
+    ? [
+        {
+          title: 'Main Trials',
+          value: `${rtgReport.summary.total_rounds}`,
+          hint: `${rtgReport.summary.expected_rounds} expected`,
+        },
+        {
+          title: 'Blocks Logged',
+          value: `${rtgReport.summary.total_blocks}`,
+          hint: `${rtgReport.summary.expected_blocks} post-block responses`,
+        },
+        {
+          title: 'Mean Amount Sent',
+          value: rtgReport.summary.mean_amount_sent.toFixed(2),
+          hint: '평균 투자액',
+        },
+        {
+          title: 'Cumulative Payoff',
+          value: rtgReport.summary.cumulative_payoff.toFixed(2),
+          hint: '최종 누적 payoff',
+        },
+      ]
+    : [];
+
+  const overall = overview?.overall_summary;
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">게임 결과 분석</h1>
-        <p className="text-muted-foreground">다양한 신뢰 게임에서 당신의 성과를 분석하여 보여드립니다.</p>
-        {/* 디버깅 정보 표시 */}
-        <div className="text-xs text-gray-500">
-          사용자: {getMedicalRecordNumber()} | 이메일: {user?.email}
-        </div>
+    <div className="container mx-auto space-y-8 px-4 py-10">
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold text-primary">Experiment Report</h1>
+        <p className="max-w-2xl text-foreground/70">
+          가장 최근에 완료한 PGG, RTG tutorial, RTG main session을 기준으로 실험 진행 현황과
+          행동 궤적을 보여줍니다.
+        </p>
       </div>
 
-      <Tabs defaultValue="public-goods" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="public-goods">
-            Public Goods ({publicGoodsData.length}/10)
-          </TabsTrigger>
-          <TabsTrigger value="trust-game-receiver">
-            신뢰게임 - 당신이 Trustee인 버전 ({trustGameReceiverData.length}/10)
-          </TabsTrigger>
-          <TabsTrigger value="trust-game-trustee">
-            신뢰게임 - 당신이 Trustor인 버전 ({trustGameTrusteeData.length}/40)
-          </TabsTrigger>
+      {overall && (
+        <StatsGrid
+          items={[
+            {
+              title: 'Overall Progress',
+              value: `${overall.overall_percentage}%`,
+              hint: `${overall.completed_rounds} / ${overall.expected_rounds} total trials`,
+            },
+            {
+              title: 'PGG Session',
+              value: overall.sessions_completed.public_goods ? 'Done' : 'Missing',
+              hint: '공공재 게임 완료 여부',
+            },
+            {
+              title: 'Tutorial Session',
+              value: overall.sessions_completed.rtg_tutorial ? 'Done' : 'Missing',
+              hint: 'RTG tutorial 완료 여부',
+            },
+            {
+              title: 'Main RTG Session',
+              value: overall.sessions_completed.trust_game ? 'Done' : 'Missing',
+              hint: 'RTG 본실험 완료 여부',
+            },
+          ]}
+        />
+      )}
+
+      <Tabs defaultValue="pgg" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="pgg">PGG</TabsTrigger>
+          <TabsTrigger value="tutorial">RTG Tutorial</TabsTrigger>
+          <TabsTrigger value="rtg">RTG Main</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="public-goods" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>공공재게임 결과 분석</CardTitle>
-              <CardDescription>
-                총 {publicGoodsData.length}라운드 완료 (최대 10라운드)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {publicGoodsData.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    {calculatePublicGoodsStats().map((stat, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 rounded-lg text-center ${
-                          stat.highlight 
-                            ? 'bg-purple-200 text-purple-800' 
-                            : 'bg-purple-100 text-purple-700'
-                        }`}
-                      >
-                        <div className="text-sm font-medium whitespace-pre-line mb-2">
-                          {stat.title}
-                        </div>
-                        <div className="text-2xl font-bold">
-                          {stat.value} <span className="text-sm font-normal">{stat.unit}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-semibold">당신의 기부액과 수익</h3>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={formatChartData(publicGoodsData, 'public-goods')}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="round" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line 
-                            type="monotone" 
-                            dataKey="당신의 수익" 
-                            stroke="#8b5cf6" 
-                            strokeWidth={2}
-                            dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="당신의 기부액" 
-                            stroke="#06b6d4" 
-                            strokeWidth={2}
-                            dot={{ fill: '#06b6d4', strokeWidth: 2, r: 4 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">아직 플레이한 게임이 없습니다.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="pgg" className="space-y-6">
+          {pggRounds.length === 0 ? (
+            <EmptyState message="완료된 PGG 세션이 아직 없습니다." />
+          ) : (
+            <>
+              <StatsGrid items={pggStats} />
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle>PGG Trial Trajectory</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[360px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={pggRounds}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="pgg_trial_index" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="pgg_contribution" stroke="#2563eb" name="Contribution" strokeWidth={2} />
+                      <Line type="monotone" dataKey="pgg_feedback_amount" stroke="#16a34a" name="Feedback" strokeWidth={2} />
+                      <Line type="monotone" dataKey="cumulative_payoff" stroke="#f59e0b" name="Cumulative payoff" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
-        <TabsContent value="trust-game-receiver" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>신뢰 게임 - 당신이 Trustee인 버전</CardTitle>
-              <CardDescription>
-                총 {trustGameReceiverData.length}라운드 완료 (최대 10라운드) - Bot이 투자하고 당신이 받아서 돌려주는 게임
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {trustGameReceiverData.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                    {calculateTrusteeGameStats(trustGameReceiverData).map((stat, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 rounded-lg text-center ${
-                          stat.highlight 
-                            ? 'bg-purple-200 text-purple-800' 
-                            : 'bg-purple-100 text-purple-700'
-                        }`}
-                      >
-                        <div className="text-sm font-medium whitespace-pre-line mb-2">
-                          {stat.title}
-                        </div>
-                        <div className="text-xl font-bold">
-                          {stat.value} <span className="text-sm font-normal">{stat.unit}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">보낸 포인트와 돌려준 포인트</h3>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameReceiverData, 'trust-game', 'trustee', 'left')}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                              dataKey="round"
-                              type="number"
-                              scale="linear"
-                              domain={['dataMin', 'dataMax']}
-                              ticks={getRoundTicks(trustGameReceiverData)}
-                              allowDuplicatedCategory={false}
-                            />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line 
-                              type="monotone" 
-                              dataKey="보낸 포인트" 
-                              stroke="#ef4444" 
-                              strokeWidth={2}
-                              dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="돌려준 포인트" 
-                              stroke="#8b5cf6" 
-                              strokeWidth={2}
-                              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">당신과 Bot의 순수익 비교</h3>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameReceiverData, 'trust-game', 'trustee', 'right')}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                              dataKey="round"
-                              type="number"
-                              scale="linear"
-                              domain={['dataMin', 'dataMax']}
-                              ticks={getRoundTicks(trustGameReceiverData)}
-                              allowDuplicatedCategory={false}
-                            />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line 
-                              type="monotone" 
-                              dataKey="당신의 순수익" 
-                              stroke="#ef4444" 
-                              strokeWidth={2}
-                              dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="Bot의 순수익" 
-                              stroke="#10b981" 
-                              strokeWidth={2}
-                              dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">아직 플레이한 게임이 없습니다.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="tutorial" className="space-y-6">
+          {tutorialRounds.length === 0 ? (
+            <EmptyState message="완료된 RTG tutorial 세션이 아직 없습니다." />
+          ) : (
+            <>
+              <StatsGrid items={tutorialStats} />
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle>Tutorial Return Pattern</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[360px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={tutorialRounds}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="trial_index" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="amount_received" stroke="#2563eb" name="Received" strokeWidth={2} />
+                      <Line type="monotone" dataKey="return_amount" stroke="#16a34a" name="Returned" strokeWidth={2} />
+                      <Line type="monotone" dataKey="amount_kept" stroke="#f59e0b" name="Kept" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
-        <TabsContent value="trust-game-trustee" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>신뢰 게임 - 당신이 Trustor인 버전</CardTitle>
-              <CardDescription>
-                총 {trustGameTrusteeData.length}라운드 완료 (최대 40라운드) - 당신이 투자하고 Bot이 받아서 돌려주는 게임
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {trustGameTrusteeData.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                    {calculateTrustorGameStats(trustGameTrusteeData).map((stat, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 rounded-lg text-center ${
-                          stat.highlight 
-                            ? 'bg-purple-200 text-purple-800' 
-                            : 'bg-purple-100 text-purple-700'
-                        }`}
-                      >
-                        <div className="text-sm font-medium whitespace-pre-line mb-2">
-                          {stat.title}
-                        </div>
-                        <div className="text-xl font-bold">
-                          {stat.value} <span className="text-sm font-normal">{stat.unit}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">보낸 포인트와 돌려받은 포인트</h3>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameTrusteeData, 'trust-game', 'trustor', 'left')}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                              dataKey="round" 
-                              type="number"
-                              scale="linear"
-                              domain={['dataMin', 'dataMax']}
-                              ticks={getRoundTicks(trustGameTrusteeData)}
-                              allowDuplicatedCategory={false}
-                            />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line 
-                              type="monotone" 
-                              dataKey="보낸 포인트" 
-                              stroke="#ef4444" 
-                              strokeWidth={2}
-                              dot={{ fill: '#ef4444', strokeWidth: 2, r: 3 }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="돌려받은 포인트" 
-                              stroke="#8b5cf6" 
-                              strokeWidth={2}
-                              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 3 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">당신과 Bot의 순수익 비교</h3>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={formatChartData(trustGameTrusteeData, 'trust-game', 'trustor', 'right')}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                              dataKey="round" 
-                              type="number"
-                              scale="linear"
-                              domain={['dataMin', 'dataMax']}
-                              ticks={getRoundTicks(trustGameTrusteeData)}
-                              allowDuplicatedCategory={false}
-                            />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line 
-                              type="monotone" 
-                              dataKey="당신의 순손익" 
-                              stroke="#ef4444" 
-                              strokeWidth={2}
-                              dot={{ fill: '#ef4444', strokeWidth: 2, r: 3 }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="Bot의 순수익" 
-                              stroke="#10b981" 
-                              strokeWidth={2}
-                              dot={{ fill: '#10b981', strokeWidth: 2, r: 3 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">아직 플레이한 게임이 없습니다.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="rtg" className="space-y-6">
+          {rtgRounds.length === 0 ? (
+            <EmptyState message="완료된 RTG main 세션이 아직 없습니다." />
+          ) : (
+            <>
+              <StatsGrid items={rtgStats} />
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle>RTG Main Trial Trajectory</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[360px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={rtgRounds}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="rtg_trial_index" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="amount_sent" stroke="#2563eb" name="Amount sent" strokeWidth={2} />
+                      <Line type="monotone" dataKey="partner_return_amount" stroke="#16a34a" name="Partner return" strokeWidth={2} />
+                      <Line type="monotone" dataKey="cumulative_payoff" stroke="#f59e0b" name="Cumulative payoff" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>
   );
-} 
+}

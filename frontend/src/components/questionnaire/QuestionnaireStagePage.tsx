@@ -43,46 +43,9 @@ export default function QuestionnaireStagePage({
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
-  const [savedAnswers, setSavedAnswers] = useState<Record<string, unknown>>({});
   const router = useRouter();
   const { getMedicalRecordNumber } = useAuth();
   const { toast } = useToast();
-
-  const collectQuestionNames = (schema: QuestionnaireSchema) => {
-    const names = new Set<string>();
-
-    const walkElements = (elements: any[] | undefined) => {
-      if (!elements) return;
-      for (const element of elements) {
-        if (element?.name) {
-          names.add(element.name);
-        }
-        if (Array.isArray(element?.elements)) {
-          walkElements(element.elements);
-        }
-        if (Array.isArray(element?.rows)) {
-          for (const row of element.rows) {
-            if (row?.value) {
-              names.add(row.value);
-            }
-          }
-        }
-      }
-    };
-
-    for (const page of schema.pages ?? []) {
-      walkElements(page.elements as any[] | undefined);
-    }
-
-    return names;
-  };
-
-  const getInitialAnswersForQuestionnaire = (schema: QuestionnaireSchema) => {
-    const questionNames = collectQuestionNames(schema);
-    return Object.fromEntries(
-      Object.entries(savedAnswers).filter(([key]) => questionNames.has(key))
-    );
-  };
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -97,9 +60,6 @@ export default function QuestionnaireStagePage({
         const status = (await questionnaireAPI.checkStatus(
           medicalRecordNumber
         )) as QuestionnaireStatus;
-
-        const detail = await questionnaireAPI.getDetail(medicalRecordNumber);
-        setSavedAnswers(detail?.answers ?? {});
 
         if (mode === "demographic") {
           return;
@@ -248,11 +208,8 @@ export default function QuestionnaireStagePage({
           <CardContent className="p-4">
             <div className="questionnaire-wrapper">
               <QuestionnaireFlow
-                formId={`${mode}-${currentQuestionnaire.key}-${Object.keys(savedAnswers).length}`}
+                formId={`${mode}-${currentQuestionnaire.key}`}
                 questionnaire={currentQuestionnaire.schema}
-                initialAnswers={getInitialAnswersForQuestionnaire(
-                  currentQuestionnaire.schema
-                )}
                 onComplete={handleAnswer}
               />
             </div>

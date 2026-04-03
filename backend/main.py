@@ -3,8 +3,9 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import game, user, match, message, report, consent, questionnaire
+from routers import game, user, message, report, consent, questionnaire
 from core.firebase import init_firebase, verify_id_token
+from core.game_config import get_game_config
 
 
 # Lifespan context manager (startup/shutdown)
@@ -12,6 +13,7 @@ from core.firebase import init_firebase, verify_id_token
 async def lifespan(app: FastAPI):
     # Firebase 초기화
     init_firebase()
+    get_game_config()
     yield
     # TODO: 리소스 정리
 
@@ -58,7 +60,6 @@ async def get_me(user=Depends(get_current_user)):
 
 app.include_router(game.router)
 app.include_router(user.router)
-app.include_router(match.router)
 app.include_router(message.router)
 app.include_router(report.router)
 app.include_router(consent.router)

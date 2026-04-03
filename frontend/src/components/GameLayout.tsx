@@ -10,6 +10,7 @@ interface GameLayoutProps {
   currentRound?: number;
   totalRounds?: number;
   playerBalance?: number;
+  balanceLabel?: string;
   currentOpponent?: string; // For Trustee game
   additionalInfo?: ReactNode; // For game-specific info like sender's investment
   showSidebar?: boolean;
@@ -22,6 +23,7 @@ export default function GameLayout({
   currentRound,
   totalRounds,
   playerBalance,
+  balanceLabel = "Cumulative Payoff",
   currentOpponent,
   additionalInfo,
   showSidebar = true,
@@ -57,7 +59,7 @@ export default function GameLayout({
               <div className="mt-6 p-4 bg-primary/10 rounded-lg flex items-center gap-3">
                 <CircleDollarSign className="h-7 w-7 text-primary" />
                 <div>
-                  <p className="font-body text-sm text-primary/80">Your Balance</p>
+                  <p className="font-body text-sm text-primary/80">{balanceLabel}</p>
                   <p className="font-headline text-2xl font-bold text-primary">{playerBalance} points</p>
                 </div>
               </div>

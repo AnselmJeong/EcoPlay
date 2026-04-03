@@ -7,8 +7,10 @@ wheels/
 *.egg-info
 uv.lock
 
+
+
 # Virtual environments
-.venv
+backend/.venv
 
 # secret
 .env

@@ -5,19 +5,16 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
+  ArrowLeft,
   ArrowRight,
-  ChevronsUpDown,
   Handshake,
   Loader2,
-  Shield,
-  User,
 } from 'lucide-react';
 
+import { BotAvatar, ParticipantAvatar } from '@/components/GameAvatar';
 import GameLayout from '@/components/GameLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { RTGPostBlockResponse, RTGSubmitTrialResponse, SessionState, rtgAPI } from '@/lib/api';
@@ -33,34 +30,30 @@ function formatPartnerLabel(label: string) {
 }
 
 function TrialStatusHeader({
-  currentBlock,
-  totalBlocks,
   currentTrial,
   trialsPerBlock,
+  partnerLabel,
+  currentBlock,
+  totalBlocks,
 }: {
-  currentBlock: number;
-  totalBlocks: number;
   currentTrial: number;
   trialsPerBlock: number;
+  partnerLabel: string;
+  currentBlock: number;
+  totalBlocks: number;
 }) {
-  const progressValue = (currentTrial / Math.max(trialsPerBlock, 1)) * 100;
-
   return (
-    <div className="mx-auto flex w-full max-w-[720px] flex-col gap-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="text-[0.88rem] font-bold tracking-[0.02em] text-[#5e6d79]">
-          현재 블록 {currentBlock} / {totalBlocks}
-        </div>
-        <div className="text-[0.82rem] font-semibold tracking-[0.02em] text-[#8ca0b4]">
-          시도 {currentTrial} / {trialsPerBlock}
-        </div>
+    <section className="mx-auto flex w-full max-w-[820px] items-start justify-between gap-5">
+      <div>
+        <p className="text-[0.95rem] font-bold tracking-[-0.01em] text-[#8a9ab0]">진행 상황</p>
+        <h2 className="mt-1 text-[2.15rem] font-black tracking-[-0.05em] text-[#151b24] md:text-[2.45rem]">
+          {currentTrial}회차 <span className="font-semibold text-[#9eb0c7]">/ {trialsPerBlock}</span>
+        </h2>
       </div>
-      <Progress
-        value={progressValue}
-        className="h-[10px] rounded-full bg-[#dfe7ef]"
-        indicatorClassName="bg-[linear-gradient(90deg,#145cc3_0%,#20b8ef_100%)]"
-      />
-    </div>
+      <div className="rounded-[20px] bg-[#e7f7f1] px-6 py-4 text-[1.15rem] font-bold tracking-[-0.02em] text-[#158b67] shadow-[0_10px_22px_rgba(27,168,119,0.08)]">
+        {partnerLabel}, {currentBlock}/{totalBlocks}
+      </div>
+    </section>
   );
 }
 
@@ -106,78 +99,41 @@ function RoleCard({
   );
 }
 
-function MultiplierBridge({ multiplier }: { multiplier: number }) {
-  return (
-    <div className="relative flex h-[84px] w-full items-center justify-center lg:h-[96px]">
-      <div className="absolute left-0 right-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full bg-[#b9efe1]" />
-      <div className="relative flex h-[56px] w-[56px] items-center justify-center rounded-full border border-white/90 bg-white text-[1.6rem] font-bold italic tracking-[-0.05em] text-[#0c7c53] shadow-[0_14px_28px_rgba(190,200,210,0.22)] lg:h-[60px] lg:w-[60px] lg:text-[1.75rem]">
-        x{multiplier}
-      </div>
-    </div>
-  );
-}
-
-function PartnerIntroBanner({
-  partnerLabel,
-  currentBlock,
-  totalBlocks,
-  previousLabel,
-}: {
-  partnerLabel: string;
-  currentBlock: number;
-  totalBlocks: number;
-  previousLabel?: string | null;
-}) {
-  return (
-    <section className="overflow-hidden rounded-[24px] border border-[#d9efe8] bg-[linear-gradient(90deg,rgba(255,255,255,0.84)_0%,rgba(231,250,243,0.86)_100%)] px-5 py-4 shadow-[0_18px_36px_rgba(198,208,221,0.12)]">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="text-[0.82rem] font-bold tracking-[0.08em] text-[#0b7b53]">새 블록 시작</div>
-          <div className="mt-1 text-[1.2rem] font-black tracking-[-0.03em] text-[#17212c]">
-            이번 블록은 <span className="text-[#0b7b53]">{partnerLabel}</span>와 진행합니다.
-          </div>
-          <div className="mt-1 text-[0.9rem] text-[#5b6a67]">
-            Block {currentBlock} / {totalBlocks}에서 15번의 시도를 연속으로 수행합니다.
-            {previousLabel ? ` 이전 평가는 ${formatPartnerLabel(previousLabel)}에 대해 저장되었습니다.` : ''}
-          </div>
-        </div>
-        <div className="rounded-full bg-white/90 px-4 py-2 text-[0.82rem] font-semibold text-[#45605b] shadow-sm">
-          새로운 파트너와 반복 상호작용
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function InvestmentScene({
-  amountSent,
-  partnerReceived,
   partnerLabel,
   multiplier,
 }: {
-  amountSent: number;
-  partnerReceived: number;
   partnerLabel: string;
   multiplier: number;
 }) {
   return (
-    <section className="mx-auto flex w-full max-w-[900px] justify-center">
-      <div className="grid items-center gap-2 md:grid-cols-[182px_340px_182px] md:gap-3">
-        <RoleCard
-          title="당신"
-          points={amountSent}
-          caption="투자할 금액"
-          tone="player"
-          icon={<User className="h-9 w-9 stroke-[1.9] lg:h-10 lg:w-10" />}
-        />
-        <MultiplierBridge multiplier={multiplier} />
-        <RoleCard
-          title={partnerLabel}
-          points={partnerReceived}
-          caption="상대가 받는 금액"
-          tone="partner"
-          icon={<Shield className="h-9 w-9 stroke-[1.9] lg:h-10 lg:w-10" />}
-        />
+    <section className="pt-5">
+      <div className="mx-auto grid max-w-[820px] items-center gap-4 md:grid-cols-[auto_minmax(360px,500px)_auto]">
+        <div className="flex flex-col items-center gap-3">
+          <ParticipantAvatar
+            alt="당신 아바타"
+            className="h-[72px] w-[72px] shadow-[0_14px_26px_rgba(243,107,44,0.18)]"
+          />
+          <div className="text-[1.05rem] font-bold tracking-[-0.02em] text-[#98a7bb]">당신</div>
+        </div>
+
+        <div className="relative flex h-[86px] items-center justify-center">
+          <div className="absolute left-0 right-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full bg-[#e7edf5]" />
+          <div className="absolute right-[7%] top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-[#c6d1dd]">
+            <ArrowRight className="h-6 w-6 stroke-[2.2]" />
+          </div>
+          <div className="relative rounded-full bg-[#f4ab00] px-7 py-3 text-[1.22rem] font-black tracking-[-0.03em] text-[#6a4300] shadow-[0_12px_24px_rgba(244,171,0,0.22)]">
+            {multiplier}배 승수
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-3">
+          <BotAvatar
+            alt={`${partnerLabel} 아바타`}
+            className="h-[72px] w-[72px] shadow-[0_14px_26px_rgba(29,47,73,0.2)]"
+          />
+          <div className="text-[1.05rem] font-bold tracking-[-0.02em] text-[#98a7bb]">{partnerLabel}</div>
+        </div>
       </div>
     </section>
   );
@@ -185,72 +141,74 @@ function InvestmentScene({
 
 function InvestmentPanel({
   endowment,
+  multiplier,
   amountSent,
   onValueChange,
   onSubmit,
   isLoading,
 }: {
   endowment: number;
+  multiplier: number;
   amountSent: number[];
   onValueChange: (value: number[]) => void;
   onSubmit: () => void;
   isLoading: boolean;
 }) {
   const invested = amountSent[0];
-  const keepPoints = Math.max(endowment - invested, 0);
+  const partnerReceived = invested * multiplier;
 
   return (
-    <section className="overflow-hidden rounded-[30px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.58)_100%)] px-5 py-6 shadow-[0_20px_48px_rgba(198,208,221,0.14)] backdrop-blur-[2px] md:px-8 md:py-7 lg:px-10 lg:py-8">
-      <div className="mx-auto flex w-full max-w-[900px] flex-col items-center">
-        <h2 className="text-center text-[2.35rem] font-black tracking-[-0.06em] text-[#131a22] md:text-[2.7rem]">투자할 금액</h2>
+    <section className="mx-auto mt-8 w-full max-w-[820px] overflow-hidden rounded-[26px] border border-[#d8dde4] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(170,184,198,0.16)] md:mt-9 md:px-10 md:py-8">
+      <div className="mx-auto flex w-full max-w-[820px] flex-col">
+        <h2 className="text-[2.05rem] font-black tracking-[-0.05em] text-[#121821] md:text-[2.35rem]">투자 금액 선택</h2>
+        <p className="mt-3 max-w-[820px] text-[1.06rem] leading-[1.9] text-[#7e8fa4] md:text-[1.14rem]">
+          파트너 봇에게 보낼 금액을 선택하세요. 보낸 금액은{' '}
+          <span className="font-bold text-[#12af84]">{multiplier}배(x{multiplier})</span>
+          {' '}가 되어 파트너 봇에게 전달됩니다.
+        </p>
 
-        <div className="mt-5 flex w-full justify-center">
-          <div className="w-full max-w-[660px] md:max-w-[720px]">
-            <div className="mb-3 grid w-full grid-cols-2 items-end">
-              <div className="text-left">
-                <div className="text-[0.82rem] font-bold tracking-[0.02em] text-[#304036] md:text-[0.88rem]">투자 포인트</div>
-                <div className="mt-1 text-[2.7rem] font-black leading-none tracking-[-0.08em] text-[#145cc3] md:text-[3rem]">
-                  {formatPoints(invested)}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[0.82rem] font-bold tracking-[0.02em] text-[#304036] md:text-[0.88rem]">보유 포인트</div>
-                <div className="mt-1 text-[2.7rem] font-black leading-none tracking-[-0.08em] text-[#121720] md:text-[3rem]">
-                  {formatPoints(keepPoints)}
-                </div>
-              </div>
-            </div>
+        <div className="mt-10">
+          <SliderPrimitive.Root
+            min={0}
+            max={endowment}
+            step={1}
+            value={amountSent}
+            onValueChange={onValueChange}
+            className="relative flex w-full touch-none select-none items-center"
+          >
+            <SliderPrimitive.Track className="relative h-[20px] w-full overflow-hidden rounded-full bg-[#edf2f8]">
+              <SliderPrimitive.Range className="absolute h-full rounded-full bg-transparent" />
+            </SliderPrimitive.Track>
+            <SliderPrimitive.Thumb className="block h-[34px] w-[34px] rounded-full border-[6px] border-white bg-[#17bf91] shadow-[0_10px_22px_rgba(23,191,145,0.28)] transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#17bf91]/20" />
+          </SliderPrimitive.Root>
 
-            <SliderPrimitive.Root
-              min={0}
-              max={endowment}
-              step={1}
-              value={amountSent}
-              onValueChange={onValueChange}
-              className="relative flex w-full touch-none select-none items-center py-3"
-            >
-              <SliderPrimitive.Track className="relative h-[24px] w-full overflow-hidden rounded-full bg-[#dfe5ea] md:h-[26px]">
-                <SliderPrimitive.Range className="absolute h-full rounded-full bg-[linear-gradient(90deg,#145cc3_0%,#20b8ef_100%)]" />
-              </SliderPrimitive.Track>
-              <SliderPrimitive.Thumb className="flex h-[46px] w-[46px] items-center justify-center rounded-full border-[4px] border-[#145cc3] bg-white shadow-[0_14px_28px_rgba(20,92,195,0.18)] transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#145cc3]/15 md:h-[50px] md:w-[50px]">
-                <ChevronsUpDown className="h-4 w-4 text-[#145cc3]" />
-              </SliderPrimitive.Thumb>
-            </SliderPrimitive.Root>
+          <div className="mt-5 grid grid-cols-3 text-[1rem] font-bold text-[#9caec4] md:text-[1.08rem]">
+            <span className="text-left">0 점</span>
+            <span className="text-center text-[1.15rem] md:text-[1.28rem]">{Math.round(endowment / 2)} 점</span>
+            <span className="text-right">{endowment} 점</span>
+          </div>
+        </div>
 
-            <div className="mt-2.5 flex items-center justify-between px-1 text-[0.74rem] font-bold tracking-[0.01em] text-[#92a4bf] md:text-[0.78rem]">
-              <span>적게 투자</span>
-              <span>많이 투자</span>
-            </div>
+        <div className="mt-8 overflow-hidden rounded-[20px] border border-[#e3e8ef] bg-[#f6f8fb]">
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <span className="text-[1.12rem] font-bold tracking-[-0.02em] text-[#72839a] md:text-[1.2rem]">투자 금액:</span>
+            <span className="text-[2rem] font-black tracking-[-0.05em] text-[#151b24] md:text-[2.25rem]">{formatPoints(invested)} 점</span>
+          </div>
+          <div className="h-px bg-[#e1e7ef]" />
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <span className="text-[1.12rem] font-bold tracking-[-0.02em] text-[#72839a] md:text-[1.2rem]">봇이 받는 금액:</span>
+            <span className="text-[2rem] font-black tracking-[-0.05em] text-[#17b587] md:text-[2.25rem]">{formatPoints(partnerReceived)} 점</span>
           </div>
         </div>
 
         <Button
           onClick={onSubmit}
           disabled={isLoading}
-          className="mt-6 h-[58px] min-w-[240px] rounded-[16px] bg-[linear-gradient(90deg,#145cc3_0%,#20b8ef_100%)] px-8 text-[0.98rem] font-bold tracking-[0.01em] text-white shadow-[0_16px_30px_rgba(32,184,239,0.22)] hover:opacity-95 md:min-w-[260px] md:text-[1rem]"
+          className="mt-8 h-[70px] w-full rounded-[20px] bg-[#08a573] text-[1.55rem] font-black tracking-[-0.03em] text-white shadow-[0_14px_28px_rgba(8,165,115,0.2)] hover:bg-[#069c6c]"
         >
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-          투자하기
+          {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : null}
+          투자 확정
+          <ArrowRight className="h-6 w-6" />
         </Button>
       </div>
     </section>
@@ -260,131 +218,173 @@ function InvestmentPanel({
 function ResultRevealPanel({
   trial,
   partnerLabel,
+  userBalance,
+  botBalance,
   onNext,
   showNextButton,
 }: {
   trial: RTGSubmitTrialResponse['trial'];
   partnerLabel: string;
+  userBalance: number;
+  botBalance: number;
   onNext?: () => void;
   showNextButton: boolean;
 }) {
+  const resultMultiplier =
+    trial.amount_sent > 0 ? Math.round(trial.amount_received_by_partner / trial.amount_sent) : 3;
+  const partnerKept = Math.max(trial.amount_received_by_partner - trial.partner_return_amount, 0);
+  const roundEndowment = Math.max(trial.amount_sent + trial.amount_kept, 1);
+  const maxPartnerReceive = Math.max(roundEndowment * resultMultiplier, 1);
+  const userNet = trial.partner_return_amount - trial.amount_sent;
+  const partnerNet = partnerKept;
+  const transferWidth = (trial.amount_received_by_partner / maxPartnerReceive) * 100;
+  const returnWidth = (trial.partner_return_amount / maxPartnerReceive) * 100;
+  const scaleMax = Math.max(80, userBalance, botBalance);
+  const userWidth = Math.max((userBalance / scaleMax) * 100, userBalance > 0 ? 18 : 0);
+  const botWidth = Math.max((botBalance / scaleMax) * 100, botBalance > 0 ? 18 : 0);
+  const roundLabel = `${String(trial.trial_within_partner).padStart(2, '0')} 라운드 종료 후 총액`;
+
   return (
-    <div className="mx-auto flex w-full max-w-[900px] flex-col gap-5">
-      <section className="mx-auto flex w-full justify-center">
-        <div className="grid items-center gap-2 md:grid-cols-[182px_340px_182px] md:gap-3">
-          <RoleCard
-            title={partnerLabel}
-            points={trial.amount_received_by_partner}
-            caption="상대가 받은 금액"
-            tone="partner"
-            icon={<Shield className="h-9 w-9 stroke-[1.9] lg:h-10 lg:w-10" />}
-          />
-          <div className="relative flex h-[84px] w-full items-center justify-center lg:h-[96px]">
-            <div className="absolute left-0 right-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full bg-[#b9efe1]" />
-            <div className="relative flex h-[56px] w-[56px] items-center justify-center rounded-full border border-white/90 bg-white text-[0.9rem] font-bold tracking-[0.02em] text-[#0c7c53] shadow-[0_14px_28px_rgba(190,200,210,0.22)] lg:h-[60px] lg:w-[60px]">
-              반환
+    <div className="mx-auto flex w-full max-w-[820px] flex-col gap-5 md:gap-6">
+      <section className="mt-8 overflow-hidden rounded-[24px] border border-[#d5e3db] bg-white px-4 py-5 shadow-[0_12px_26px_rgba(192,205,213,0.14)] md:mt-9 md:px-7 md:py-6">
+        <div className="mx-auto max-w-[720px]">
+          <div className="mx-auto h-[9px] w-[220px] rounded-full bg-[#edf1f5] md:w-[260px]">
+            <div
+              className="h-full rounded-full bg-[linear-gradient(90deg,#0e8c68_0%,#1d63c7_100%)] transition-[width] duration-300"
+              style={{ width: `${Math.min(Math.max(transferWidth, 0), 100)}%` }}
+            />
+          </div>
+          <div className="mt-3 text-center">
+            <div className="inline-flex rounded-full bg-[#1f63c6] px-3 py-1.5 text-[0.82rem] font-black tracking-[-0.02em] text-white shadow-[0_8px_16px_rgba(31,99,198,0.16)] md:text-[0.88rem]">
+              {resultMultiplier}배 증액 (X{resultMultiplier})
+            </div>
+            <div className="mt-3 text-[1.2rem] font-black tracking-[-0.04em] text-[#1f63c6] md:text-[1.4rem]">
+              {formatPoints(trial.amount_received_by_partner)} 점 전달됨
+            </div>
+            <div className="mt-1 flex justify-center text-[#1f63c6]">
+              <ArrowRight className="h-7 w-7 stroke-[2.8] md:h-8 md:w-8" />
             </div>
           </div>
-          <RoleCard
-            title="당신"
-            points={trial.partner_return_amount}
-            caption="상대가 돌려준 금액"
-            tone="player"
-            icon={<User className="h-9 w-9 stroke-[1.9] lg:h-10 lg:w-10" />}
-          />
+
+          <div className="mt-6 grid items-start gap-4 md:grid-cols-[124px_1fr_124px] md:gap-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="text-[0.92rem] font-bold tracking-[-0.02em] text-[#48544d] md:text-[0.98rem]">당신의 투자액</div>
+              <div className="mt-1.5 flex h-[56px] w-[56px] items-center justify-center rounded-[13px] bg-[#1cc08e] text-[1.5rem] font-black tracking-[-0.05em] text-white shadow-[0_8px_18px_rgba(28,192,142,0.18)] md:h-[60px] md:w-[60px] md:text-[1.65rem]">
+                {formatPoints(trial.amount_sent)}
+              </div>
+              <div className="mt-2 text-[0.86rem] font-black text-[#313b37]">점</div>
+            </div>
+
+            <div className="relative pt-4 text-center">
+              <div className="relative mx-auto h-[9px] w-[220px] max-w-full rounded-full bg-[#eef3f7] md:w-[280px]">
+                <div
+                  className="ml-auto h-full rounded-full bg-[#0e8c68] transition-[width] duration-300"
+                  style={{ width: `${Math.min(Math.max(returnWidth, 0), 100)}%` }}
+                />
+              </div>
+              <div className="relative mt-4 text-[2.15rem] font-black tracking-[-0.07em] text-[#0e8c68] md:text-[2.6rem]">
+                {formatPoints(trial.partner_return_amount)} 점 반환됨
+              </div>
+              <div className="mt-1 flex justify-center text-[#0e8c68]">
+                <ArrowLeft className="h-7 w-7 stroke-[2.8] md:h-8 md:w-8" />
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center text-center">
+              <div className="text-[0.92rem] font-bold tracking-[-0.02em] text-[#48544d] md:text-[0.98rem]">봇의 보유액</div>
+              <div className="mt-1.5 flex h-[56px] w-[56px] items-center justify-center rounded-[13px] border-[3px] border-[#c8d8cf] bg-[#f6f8f9] text-[1.5rem] font-black tracking-[-0.05em] text-[#303936] md:h-[60px] md:w-[60px] md:text-[1.65rem]">
+                {formatPoints(partnerKept)}
+              </div>
+              <div className="mt-2 text-[0.86rem] font-black text-[#313b37]">점</div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[28px] border border-[#dff0e9] bg-[linear-gradient(180deg,rgba(255,255,255,0.76)_0%,rgba(241,253,248,0.72)_100%)] px-5 py-5 shadow-[0_18px_36px_rgba(198,208,221,0.12)]">
-        <div className="grid gap-3 md:grid-cols-4">
-          <div className="rounded-[20px] bg-white/90 px-4 py-4 shadow-sm">
-            <div className="text-[0.8rem] font-semibold text-[#6a7874]">투자한 금액</div>
-            <div className="mt-2 text-[1.9rem] font-black tracking-[-0.05em] text-[#145cc3]">
-              {formatPoints(trial.amount_sent)}점
+      <section className="grid gap-3 md:grid-cols-2 md:gap-4">
+        <div className="rounded-[20px] border border-[#cfe0d6] bg-white px-4 py-4 shadow-[0_10px_20px_rgba(192,205,213,0.12)] md:px-5 md:py-4">
+          <div className="flex items-center gap-3">
+            <ParticipantAvatar
+              alt="당신 아바타"
+              className="h-[64px] w-[64px] shadow-[0_10px_18px_rgba(243,107,44,0.14)]"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.86rem] font-bold tracking-[-0.02em] text-[#9da7aa]">라운드 수익</div>
+              <div className="text-[1.5rem] font-black tracking-[-0.05em] text-[#161b22] md:text-[1.65rem]">당신</div>
             </div>
-          </div>
-          <div className="rounded-[20px] bg-white/90 px-4 py-4 shadow-sm">
-            <div className="text-[0.8rem] font-semibold text-[#6a7874]">상대가 받은 금액</div>
-            <div className="mt-2 text-[1.9rem] font-black tracking-[-0.05em] text-[#0b7b53]">
-              {formatPoints(trial.amount_received_by_partner)}점
-            </div>
-          </div>
-          <div className="rounded-[20px] bg-white/90 px-4 py-4 shadow-sm">
-            <div className="text-[0.8rem] font-semibold text-[#6a7874]">돌려받은 금액</div>
-            <div className="mt-2 text-[1.9rem] font-black tracking-[-0.05em] text-[#0b7b53]">
-              {formatPoints(trial.partner_return_amount)}점
-            </div>
-          </div>
-          <div className="rounded-[20px] bg-white/90 px-4 py-4 shadow-sm">
-            <div className="text-[0.8rem] font-semibold text-[#6a7874]">시도 후 내 잔액</div>
-            <div className="mt-2 text-[1.9rem] font-black tracking-[-0.05em] text-[#151b24]">
-              {formatPoints(trial.participant_total_payoff_this_trial)}점
+            <div className="text-right">
+              <div className="text-[1.7rem] font-black tracking-[-0.06em] text-[#0e8c68] md:text-[1.9rem]">
+                {userNet > 0 ? '+' : ''}{formatPoints(userNet)} 점
+              </div>
+              <div className="text-[0.84rem] font-semibold text-[#7f8c92]">라운드 수익</div>
             </div>
           </div>
         </div>
 
-        {showNextButton && onNext ? (
-          <div className="mt-5 flex justify-end">
-            <Button
-              onClick={onNext}
-              className="h-[52px] rounded-[15px] bg-[linear-gradient(90deg,#145cc3_0%,#20b8ef_100%)] px-7 text-[0.98rem] font-bold text-white shadow-[0_14px_28px_rgba(32,184,239,0.24)] hover:opacity-95"
-            >
-              다음 시도
-            </Button>
+        <div className="rounded-[20px] border border-[#d4deea] bg-white px-4 py-4 shadow-[0_10px_20px_rgba(192,205,213,0.12)] md:px-5 md:py-4">
+          <div className="flex items-center gap-3">
+            <BotAvatar
+              alt={`${partnerLabel} 아바타`}
+              className="h-[64px] w-[64px] shadow-[0_10px_18px_rgba(29,47,73,0.15)]"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.86rem] font-bold tracking-[-0.02em] text-[#9da7aa]">라운드 수익</div>
+              <div className="text-[1.5rem] font-black tracking-[-0.05em] text-[#161b22] md:text-[1.65rem]">{partnerLabel}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[1.7rem] font-black tracking-[-0.06em] text-[#1f63c6] md:text-[1.9rem]">
+                {partnerNet > 0 ? '+' : ''}{formatPoints(partnerNet)} 점
+              </div>
+              <div className="text-[0.84rem] font-semibold text-[#7f8c92]">라운드 수익</div>
+            </div>
           </div>
-        ) : null}
+        </div>
       </section>
+
+      <section className="overflow-hidden rounded-[24px] border border-[#d5e3db] bg-white px-4 py-5 shadow-[0_12px_26px_rgba(192,205,213,0.12)] md:px-7 md:py-6">
+        <div className="text-[1.45rem] font-black tracking-[-0.05em] text-[#161b22] md:text-[1.65rem]">{roundLabel}</div>
+
+        <div className="mt-7 space-y-6">
+          <div>
+            <div className="mb-2.5 flex items-center justify-between gap-4">
+              <div className="text-[1.08rem] font-black tracking-[-0.04em] text-[#1f2a24] md:text-[1.18rem]">당신의 잔액</div>
+              <div className="text-[1.45rem] font-black tracking-[-0.05em] text-[#0e8c68] md:text-[1.6rem]">{formatPoints(userBalance)} 점</div>
+            </div>
+            <div className="h-[16px] overflow-hidden rounded-full bg-[#eef1f4]">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#58c2a4_0%,#47b497_100%)] transition-[width] duration-300"
+                style={{ width: `${Math.min(userWidth, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2.5 flex items-center justify-between gap-4">
+              <div className="text-[1.08rem] font-black tracking-[-0.04em] text-[#1f2a24] md:text-[1.18rem]">{partnerLabel} 잔액</div>
+              <div className="text-[1.45rem] font-black tracking-[-0.05em] text-[#1f63c6] md:text-[1.6rem]">{formatPoints(botBalance)} 점</div>
+            </div>
+            <div className="h-[16px] overflow-hidden rounded-full bg-[#eef1f4]">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#76aef2_0%,#5e9be9_100%)] transition-[width] duration-300"
+                style={{ width: `${Math.min(botWidth, 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {showNextButton && onNext ? (
+        <div className="flex justify-center pt-2">
+          <Button
+            onClick={onNext}
+            className="h-[58px] min-w-[260px] rounded-[18px] bg-[#0d7e5f] px-7 text-[1.08rem] font-black tracking-[-0.03em] text-white shadow-[0_12px_22px_rgba(13,126,95,0.18)] hover:bg-[#0b7658] md:h-[62px] md:min-w-[320px] md:text-[1.2rem]"
+          >
+            다음 라운드 시작
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        </div>
+      ) : null}
     </div>
-  );
-}
-
-function BalanceBars({
-  botBalance,
-  userBalance,
-}: {
-  botBalance: number;
-  userBalance: number;
-}) {
-  const scaleMax = Math.max(50, botBalance, userBalance, 1);
-  const botWidth = botBalance > 0 ? (botBalance / scaleMax) * 100 : 0;
-  const userWidth = userBalance > 0 ? (userBalance / scaleMax) * 100 : 0;
-
-  return (
-    <section className="mx-auto w-full max-w-[640px] pt-1">
-      <div className="space-y-3">
-        <div className="text-[1.08rem] font-black tracking-[-0.02em] text-[#58635f] md:text-[1.16rem]">잔액</div>
-
-        <div className="flex items-center gap-4">
-          <div className="w-14 text-[0.82rem] font-bold tracking-[0.02em] text-[#6c766b] md:w-16">
-            파트너
-          </div>
-          <div className="flex-1 h-[24px] overflow-hidden rounded-full bg-white/80 shadow-[inset_0_2px_8px_rgba(210,220,232,0.20)] md:h-[26px]">
-            <div
-              className="flex h-full items-center justify-start rounded-full bg-[linear-gradient(90deg,#3b82f6_0%,#1db8f4_100%)] px-4 text-[0.68rem] font-bold tracking-[0.08em] text-white transition-[width] duration-300 md:text-[0.72rem]"
-              style={{ width: `${Math.min(botWidth, 100)}%` }}
-            />
-          </div>
-          <div className="w-14 text-right text-[1.9rem] font-black leading-none tracking-[-0.08em] text-[#1562d0] md:w-16 md:text-[2.1rem]">
-            {formatPoints(botBalance)}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="w-14 text-[0.82rem] font-bold tracking-[0.02em] text-[#6c766b] md:w-16">
-            당신
-          </div>
-          <div className="flex-1 h-[24px] overflow-hidden rounded-full bg-white/80 shadow-[inset_0_2px_8px_rgba(210,220,232,0.20)] md:h-[26px]">
-            <div
-              className="flex h-full items-center justify-start rounded-full bg-[linear-gradient(90deg,#19c98d_0%,#0f7b53_100%)] px-4 text-[0.68rem] font-bold tracking-[0.08em] text-white transition-[width] duration-300 md:text-[0.72rem]"
-              style={{ width: `${Math.min(userWidth, 100)}%` }}
-            />
-          </div>
-          <div className="w-14 text-right text-[1.9rem] font-black leading-none tracking-[-0.08em] text-[#0b875d] md:w-16 md:text-[2.1rem]">
-            {formatPoints(userBalance)}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -430,7 +430,7 @@ function RatingSlider({
         </span>
       </div>
       <SliderPrimitive.Root
-        min={1}
+        min={0}
         max={7}
         step={1}
         value={value}
@@ -531,8 +531,8 @@ export default function RTGMainPage() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [amountSent, setAmountSent] = useState<number[]>([0]);
   const [classification, setClassification] = useState<PartnerClassification>('high_return');
-  const [confidence, setConfidence] = useState<number[]>([4]);
-  const [willingness, setWillingness] = useState<number[]>([4]);
+  const [confidence, setConfidence] = useState<number[]>([0]);
+  const [willingness, setWillingness] = useState<number[]>([0]);
   const [lastTrial, setLastTrial] = useState<RTGSubmitTrialResponse | null>(null);
   const [lastPostBlock, setLastPostBlock] = useState<RTGPostBlockResponse | null>(null);
   const [promptStartedAt, setPromptStartedAt] = useState<number>(Date.now());
@@ -614,8 +614,8 @@ export default function RTGMainPage() {
       setLastPostBlock(response);
       setLastTrial(null);
       setClassification('high_return');
-      setConfidence([4]);
-      setWillingness([4]);
+      setConfidence([0]);
+      setWillingness([0]);
       toast({
         title: `Block ${response.post_block.rtg_block_index} 저장 완료`,
         description: response.completed ? 'RTG 본실험이 완료되었습니다.' : '다음 파트너 block으로 이동합니다.',
@@ -650,17 +650,12 @@ export default function RTGMainPage() {
   const isAwaitingPostBlockPhase =
     session?.phase === 'awaiting_post_block' || session?.awaiting_post_block === true;
   const isTrialLikePhase = Boolean(session) && !isCompletedPhase && !isAwaitingPostBlockPhase;
-  const partnerReceivedPreview = Math.round(amountSent[0] * multiplier);
   const lastTrialPartnerBalance = Math.round(
     session?.current_partner_balance ?? lastTrial?.trial.partner_balance_after_trial ?? 0
   );
   const lastTrialUserBalance = Math.round(
     session?.current_balance ?? lastTrial?.trial.participant_balance_after_trial ?? 0
   );
-  const showNewPartnerBanner =
-    isTrialLikePhase &&
-    !lastTrial &&
-    ((session?.current_trial_within_block ?? 1) === 1 || Boolean(lastPostBlock));
 
   return (
     <GameLayout
@@ -671,6 +666,7 @@ export default function RTGMainPage() {
       playerBalance={session?.current_balance ?? session?.cumulative_payoff ?? 0}
       balanceLabel="현재 잔액"
       showSidebar={!session}
+      contentClassName={session ? 'bg-transparent p-0 shadow-none backdrop-blur-0 min-h-0' : undefined}
     >
       {!session && (
         <Card className="mx-auto w-full max-w-2xl border-none bg-transparent shadow-none">
@@ -700,60 +696,50 @@ export default function RTGMainPage() {
       )}
 
       {session && (
-        <div className="mx-auto flex w-full max-w-[920px] flex-col gap-5 px-1 py-1">
-          {showNewPartnerBanner && session.current_block_index && session.total_blocks ? (
-            <PartnerIntroBanner
-              partnerLabel={partnerLabel}
-              currentBlock={session.current_block_index}
-              totalBlocks={session.total_blocks}
-              previousLabel={lastPostBlock?.post_block.partner_public_label}
-            />
-          ) : null}
-
+        <div className="mx-auto flex w-full max-w-[980px] flex-col gap-8 px-2 py-2 md:px-4">
           {isTrialLikePhase && !lastTrial ? (
-            <>
+            <div className="w-full [zoom:0.9]">
               <TrialStatusHeader
-                currentBlock={currentBlock}
-                totalBlocks={totalBlocks}
                 currentTrial={currentTrialWithinBlock}
                 trialsPerBlock={trialsPerBlock}
+                partnerLabel={partnerLabel}
+                currentBlock={currentBlock}
+                totalBlocks={totalBlocks}
               />
               <InvestmentScene
-                amountSent={amountSent[0]}
-                partnerReceived={partnerReceivedPreview}
                 partnerLabel={partnerLabel}
                 multiplier={multiplier}
               />
 
               <InvestmentPanel
                 endowment={endowment}
+                multiplier={multiplier}
                 amountSent={amountSent}
                 onValueChange={setAmountSent}
                 onSubmit={handleSubmitTrial}
                 isLoading={isLoading}
               />
-            </>
+            </div>
           ) : null}
 
-          {lastTrial ? (
-            <>
+          {lastTrial && !isAwaitingPostBlockPhase ? (
+            <div className="w-full [zoom:0.9]">
               <TrialStatusHeader
-                currentBlock={currentBlock}
-                totalBlocks={totalBlocks}
                 currentTrial={lastTrial.trial.trial_within_partner}
                 trialsPerBlock={trialsPerBlock}
+                partnerLabel={formatPartnerLabel(lastTrial.trial.partner_public_label)}
+                currentBlock={lastTrial.trial.rtg_block_index}
+                totalBlocks={totalBlocks}
               />
               <ResultRevealPanel
                 trial={lastTrial.trial}
                 partnerLabel={formatPartnerLabel(lastTrial.trial.partner_public_label)}
+                userBalance={lastTrialUserBalance}
+                botBalance={lastTrialPartnerBalance}
                 onNext={handleNextTrial}
                 showNextButton={isTrialLikePhase}
               />
-              <BalanceBars
-                botBalance={lastTrialPartnerBalance}
-                userBalance={lastTrialUserBalance}
-              />
-            </>
+            </div>
           ) : null}
 
           {isAwaitingPostBlockPhase ? (

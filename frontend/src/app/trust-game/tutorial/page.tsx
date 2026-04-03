@@ -7,13 +7,12 @@ import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
   ArrowRight,
   BookOpenCheck,
-  Bot,
   ChevronsUpDown,
   Loader2,
   RotateCcw,
-  User,
 } from 'lucide-react';
 
+import { BotAvatar, ParticipantAvatar } from '@/components/GameAvatar';
 import GameLayout from '@/components/GameLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,23 +38,21 @@ function ParticipantCard({
   points,
   caption,
   tone,
-  icon,
+  avatar,
 }: {
   title: string;
   points: number;
   caption: string;
   tone: 'bot' | 'user';
-  icon: ReactNode;
+  avatar: ReactNode;
 }) {
   const toneClasses =
     tone === 'bot'
       ? {
-          icon: 'text-[#145cc3]',
           points: 'text-[#151b24]',
           border: 'border-white/90',
         }
       : {
-          icon: 'text-[#0b7b53]',
           points: 'text-[#0b7b53]',
           border: 'border-[#d8ebe3]',
         };
@@ -64,7 +61,7 @@ function ParticipantCard({
     <div
       className={`flex w-full max-w-[172px] flex-col items-center rounded-[20px] border bg-white px-5 py-5 text-center shadow-[0_24px_42px_rgba(190,210,220,0.16)] lg:max-w-[182px] lg:px-6 lg:py-6 ${toneClasses.border}`}
     >
-      <div className={`flex h-9 w-9 items-center justify-center lg:h-10 lg:w-10 ${toneClasses.icon}`}>{icon}</div>
+      {avatar}
       <div className="mt-3 text-[0.95rem] font-semibold tracking-[-0.01em] text-[#2f3d37] lg:text-[1rem]">
         {title}
       </div>
@@ -104,7 +101,7 @@ function TutorialTransferScene({
           points={senderInvestment}
           caption="당신에게 보냄"
           tone="bot"
-          icon={<Bot className="h-9 w-9 stroke-[1.9] lg:h-10 lg:w-10" />}
+          avatar={<BotAvatar alt="투자자 봇 아바타" className="h-14 w-14 lg:h-16 lg:w-16" />}
         />
         <MultiplierBridge multiplier={multiplier} />
         <ParticipantCard
@@ -112,7 +109,7 @@ function TutorialTransferScene({
           points={amountReceived}
           caption="받은 금액"
           tone="user"
-          icon={<User className="h-9 w-9 stroke-[1.9] lg:h-10 lg:w-10" />}
+          avatar={<ParticipantAvatar alt="당신 아바타" className="h-14 w-14 lg:h-16 lg:w-16" />}
         />
       </div>
     </section>

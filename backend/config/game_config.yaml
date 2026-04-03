@@ -25,53 +25,38 @@ rtg:
   partners:
     - name: "High Reciprocity"
       code: 1
-      mean_return_rate: [0.60, 0.75]
-      volatility_parameter: 0.05
+      mean_return_rate: [0.60, 0.80]
       contingency_schedule_id: "high-reciprocity-default"
-      noise_distribution:
-        type: "normal"
-        mean: 0.0
-        sd: 0.05
       clamp: [0.0, 1.0]
 
     - name: "Low Reciprocity"
       code: 2
-      mean_return_rate: [0.10, 0.30]
-      volatility_parameter: 0.05
+      mean_return_rate: [0.30, 0.50]
       contingency_schedule_id: "low-reciprocity-default"
-      noise_distribution:
-        type: "normal"
-        mean: 0.0
-        sd: 0.05
       clamp: [0.0, 1.0]
 
     - name: "Volatile Reciprocity"
       code: 3
-      mean_return_rate: [0.40, 0.40]
-      volatility_parameter: 0.25
-      contingency_schedule_id: "volatile-fixed-v1"
+      mean_return_rate: [0.30, 0.80]
+      contingency_schedule_id: "volatile-uniform-sampled-v2"
       contingency_schedule:
         [
-          0.72,
-          0.18,
-          0.61,
-          0.22,
+          0.62,
+          0.31,
+          0.44,
+          0.41,
           0.67,
-          0.14,
-          0.58,
-          0.26,
-          0.70,
-          0.12,
-          0.63,
-          0.19,
-          0.55,
-          0.28,
           0.64,
+          0.75,
+          0.34,
+          0.51,
+          0.31,
+          0.41,
+          0.55,
+          0.31,
+          0.40,
+          0.62,
         ]
-      noise_distribution:
-        type: "normal"
-        mean: 0.0
-        sd: 0.0
       clamp: [0.0, 1.0]
 
 post_block_questions:

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Info, CircleDollarSign, BarChart3, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from "@/components/ui/progress";
+import { cn } from '@/lib/utils';
 
 interface GameLayoutProps {
   title: string;
@@ -14,6 +15,7 @@ interface GameLayoutProps {
   currentOpponent?: string; // For Trustee game
   additionalInfo?: ReactNode; // For game-specific info like sender's investment
   showSidebar?: boolean;
+  contentClassName?: string;
 }
 
 export default function GameLayout({
@@ -27,6 +29,7 @@ export default function GameLayout({
   currentOpponent,
   additionalInfo,
   showSidebar = true,
+  contentClassName,
 }: GameLayoutProps) {
   const progressPercentage = totalRounds && currentRound ? (currentRound / totalRounds) * 100 : 0;
 
@@ -69,7 +72,13 @@ export default function GameLayout({
         </Card>
       )}
 
-      <div className={`${showSidebar ? 'lg:col-span-2' : ''} bg-card/50 backdrop-blur-sm p-6 rounded-xl shadow-xl min-h-[400px] flex flex-col`}>
+      <div
+        className={cn(
+          showSidebar ? 'lg:col-span-2' : '',
+          'bg-card/50 backdrop-blur-sm p-6 rounded-xl shadow-xl min-h-[400px] flex flex-col',
+          contentClassName
+        )}
+      >
         {children}
       </div>
     </div>

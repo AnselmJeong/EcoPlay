@@ -3,12 +3,6 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 
-class NoiseDistributionConfig(BaseModel):
-    type: Literal["normal", "uniform"]
-    mean: float = 0.0
-    sd: float = Field(ge=0.0)
-
-
 class PGGSimulatedAgentsConfig(BaseModel):
     contribution_range: tuple[float, float]
     strategy: Literal["uniform_random", "fixed", "conditional"]
@@ -50,8 +44,6 @@ class RTGPartnerConfig(BaseModel):
     name: str
     code: int = Field(gt=0)
     mean_return_rate: tuple[float, float]
-    volatility_parameter: float = Field(ge=0.0)
-    noise_distribution: NoiseDistributionConfig
     clamp: tuple[float, float] = (0.0, 1.0)
     contingency_schedule_id: str | None = None
     contingency_schedule: list[float] | None = None

@@ -551,10 +551,6 @@ class RTGSessionService:
             "response_time_ms": response_time_ms,
             "algorithm_version": partner_response.algorithm_log["algorithm_version"],
             "partner_seed": block["partner_seed"],
-            "planned_partner_return_ratio": partner_response.algorithm_log["planned_ratio"],
-            "actual_partner_return_ratio": partner_response.algorithm_log["actual_ratio"],
-            "volatility_parameter": partner_response.algorithm_log["volatility_parameter"],
-            "noise_term": partner_response.algorithm_log["noise_term"],
             "contingency_schedule_id": partner_response.algorithm_log["contingency_schedule_id"],
             "created_at": utcnow(),
         }

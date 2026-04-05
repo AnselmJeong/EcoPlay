@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
-import { QuestionnaireFlow, type QuestionnaireSchema } from "questionnaire-js";
+import { QuestionnaireFlow } from "questionnaire-js";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,18 +11,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { questionnaireAPI } from "@/lib/api";
 import { hasCompletedAllGames } from "@/lib/gameProgress";
-
-type QuestionnaireDefinition = {
-  key: string;
-  name: string;
-  schema: QuestionnaireSchema;
-};
+import type { QuestionnaireDefinition } from "@/lib/questionnaireTypes";
 
 type QuestionnaireStagePageProps = {
   mode: "demographic" | "followup";
   questionnaires: QuestionnaireDefinition[];
   previousRoute: string;
   completionRoute: string;
+  markCompleteOnFinish?: boolean;
 };
 
 type QuestionnaireStatus = {
@@ -36,6 +32,7 @@ export default function QuestionnaireStagePage({
   questionnaires,
   previousRoute,
   completionRoute,
+  markCompleteOnFinish = false,
 }: QuestionnaireStagePageProps) {
   const [currentQuestionnaireIndex, setCurrentQuestionnaireIndex] = useState(0);
   const [questionnaireAnswers, setQuestionnaireAnswers] = useState<
@@ -71,7 +68,7 @@ export default function QuestionnaireStagePage({
 
           const gamesCompleted = await hasCompletedAllGames();
           if (!gamesCompleted) {
-            router.replace("/questionnaire/demographic");
+            router.replace("/games");
             return;
           }
         }
@@ -149,7 +146,7 @@ export default function QuestionnaireStagePage({
   const handleComplete = async () => {
     setIsSubmitting(true);
     try {
-      await saveQuestionnaireProgress(mode === "followup");
+      await saveQuestionnaireProgress(markCompleteOnFinish);
       toast({
         title: "설문 완료",
         description: "설문이 성공적으로 저장되었습니다.",

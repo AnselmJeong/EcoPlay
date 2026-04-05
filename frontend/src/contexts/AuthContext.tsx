@@ -64,6 +64,37 @@ function validateMedicalRecordNumber(medicalRecordNumber: string): boolean {
   return /^\d{8}$/.test(medicalRecordNumber);
 }
 
+function mapFirebaseAuthError(error: unknown): Error {
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+  const message =
+    typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
+
+  switch (code) {
+    case 'auth/user-not-found':
+      return new Error('등록되지 않은 병록번호입니다. 회원가입을 먼저 진행해주세요.');
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return new Error('생년월일이 일치하지 않습니다.');
+    case 'auth/invalid-email':
+      return new Error('올바르지 않은 병록번호 형식입니다.');
+    case 'auth/email-already-in-use':
+      return new Error('이미 등록된 병록번호입니다. 로그인을 시도해주세요.');
+    case 'auth/weak-password':
+      return new Error('비밀번호는 6자리 이상이어야 합니다.');
+    case 'auth/api-key-expired':
+    case 'auth/invalid-api-key':
+      return new Error(
+        'Firebase 인증 설정의 API 키가 만료되었거나 잘못되었습니다. Firebase Console의 웹 앱 설정값으로 NEXT_PUBLIC_FIREBASE_API_KEY를 갱신하고 개발 서버를 다시 시작해주세요.'
+      );
+    case 'auth/app-not-authorized':
+      return new Error(
+        '현재 앱이 Firebase Authentication 사용 권한이 없습니다. Firebase Console에서 API 키 제한과 승인 도메인을 확인해주세요.'
+      );
+    default:
+      return new Error(message || '인증 처리 중 오류가 발생했습니다.');
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,16 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error: any) {
       console.error('로그인 오류:', error);
-      
-      if (error.code === 'auth/user-not-found') {
-        throw new Error('등록되지 않은 병록번호입니다. 회원가입을 먼저 진행해주세요.');
-      } else if (error.code === 'auth/wrong-password') {
-        throw new Error('생년월일이 일치하지 않습니다.');
-      } else if (error.code === 'auth/invalid-email') {
-        throw new Error('올바르지 않은 병록번호 형식입니다.');
-      } else {
-        throw new Error(error.message || '로그인 중 오류가 발생했습니다.');
-      }
+      throw mapFirebaseAuthError(error);
     }
   };
 
@@ -142,16 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error: any) {
       console.error('회원가입 오류:', error);
-      
-      if (error.code === 'auth/email-already-in-use') {
-        throw new Error('이미 등록된 병록번호입니다. 로그인을 시도해주세요.');
-      } else if (error.code === 'auth/weak-password') {
-        throw new Error('비밀번호는 6자리 이상이어야 합니다.');
-      } else if (error.code === 'auth/invalid-email') {
-        throw new Error('올바르지 않은 병록번호 형식입니다.');
-      } else {
-        throw new Error(error.message || '회원가입 중 오류가 발생했습니다.');
-      }
+      throw mapFirebaseAuthError(error);
     }
   };
 
@@ -167,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error: any) {
       console.error('로그아웃 오류:', error);
-      throw new Error('로그아웃 중 오류가 발생했습니다.');
+      throw mapFirebaseAuthError(error);
     }
   };
 
@@ -196,14 +209,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error: any) {
       console.error('비밀번호 변경 오류:', error);
-      
-      if (error.code === 'auth/wrong-password') {
+
+      if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') {
         throw new Error('현재 비밀번호가 일치하지 않습니다.');
-      } else if (error.code === 'auth/weak-password') {
-        throw new Error('새 비밀번호는 6자리 이상이어야 합니다.');
-      } else {
-        throw new Error(error.message || '비밀번호 변경 중 오류가 발생했습니다.');
       }
+
+      if (error?.code === 'auth/weak-password') {
+        throw new Error('새 비밀번호는 6자리 이상이어야 합니다.');
+      }
+
+      throw mapFirebaseAuthError(error);
     }
   };
 

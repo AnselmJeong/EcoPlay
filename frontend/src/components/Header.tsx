@@ -22,7 +22,7 @@ export default function Header() {
     { href: "/", label: "초기 화면", icon: House, active: pathname === "/" },
     {
       href: "/questionnaire",
-      label: "설문 화면",
+      label: "설문지 작성",
       icon: ClipboardList,
       active: pathname?.startsWith("/questionnaire"),
     },

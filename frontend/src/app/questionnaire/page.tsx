@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { questionnaireAPI } from "@/lib/api";
-import { hasCompletedAllGames } from "@/lib/gameProgress";
 
 type QuestionnaireStatus = {
   completed?: boolean;
@@ -35,10 +34,7 @@ export default function QuestionnairePage() {
           return;
         }
 
-        const gamesCompleted = await hasCompletedAllGames();
-        router.replace(
-          gamesCompleted ? "/questionnaire/follow-up" : "/questionnaire/demographic"
-        );
+        router.replace("/questionnaire/follow-up");
       } catch {
         router.replace("/questionnaire/demographic");
       }

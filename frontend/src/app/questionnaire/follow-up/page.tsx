@@ -1,25 +1,17 @@
-"use client";
+import FollowUpQuestionnaireHub from "@/components/questionnaire/FollowUpQuestionnaireHub";
+import {
+  getFollowUpQuestionnaires,
+  toQuestionnaireSummary,
+} from "@/lib/questionnaireRegistry";
 
-import type { QuestionnaireSchema } from "questionnaire-js";
+export const dynamic = "force-dynamic";
 
-import QuestionnaireStagePage from "@/components/questionnaire/QuestionnaireStagePage";
-import pclK5Data from "@/questionnaires/pcl-k-5.json";
+export default async function FollowUpQuestionnairePage() {
+  const questionnaires = await getFollowUpQuestionnaires();
 
-const questionnaires = [
-  {
-    key: "pcl_k5",
-    name: "PTSD 척도",
-    schema: pclK5Data as QuestionnaireSchema,
-  },
-];
-
-export default function FollowUpQuestionnairePage() {
   return (
-    <QuestionnaireStagePage
-      mode="followup"
-      questionnaires={questionnaires}
-      previousRoute="/games"
-      completionRoute="/report"
+    <FollowUpQuestionnaireHub
+      questionnaires={questionnaires.map(toQuestionnaireSummary)}
     />
   );
 }

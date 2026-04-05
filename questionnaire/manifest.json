@@ -1,0 +1,25 @@
+{
+  "displayOrder": ["demographic.json", "pcl-k-5.json", "bdi.json", "bai.json"],
+  "questionnaires": {
+    "demographic.json": {
+      "key": "demographic",
+      "name": "인구학적 정보",
+      "stage": "demographic"
+    },
+    "pcl-k-5.json": {
+      "key": "pcl_k5",
+      "name": "PTSD 척도",
+      "stage": "followup"
+    },
+    "bdi.json": {
+      "key": "bdi",
+      "name": "벡 우울증 척도",
+      "stage": "followup"
+    },
+    "bai.json": {
+      "key": "bai",
+      "name": "벡 불안 척도",
+      "stage": "followup"
+    }
+  }
+}

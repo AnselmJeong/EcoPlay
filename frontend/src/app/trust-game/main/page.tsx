@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
-  ArrowLeft,
   ArrowRight,
   Handshake,
   Loader2,
@@ -23,6 +22,43 @@ type PartnerClassification = 'high_return' | 'low_return' | 'unpredictable';
 
 function formatPoints(value: number) {
   return `${Math.round(value)}`;
+}
+
+function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
+}
+
+function describeSector(
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  if (Math.abs(endAngle - startAngle) >= 360) {
+    return [
+      `M ${cx} ${cy - radius}`,
+      `A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius}`,
+      `A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius}`,
+      'Z',
+    ].join(' ');
+  }
+
+  const start = polarToCartesian(cx, cy, radius, endAngle);
+  const end = polarToCartesian(cx, cy, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+
+  return [
+    `M ${cx} ${cy}`,
+    `L ${start.x} ${start.y}`,
+    `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
+    'Z',
+  ].join(' ');
 }
 
 function formatPartnerLabel(label: string) {
@@ -189,15 +225,14 @@ function InvestmentPanel({
           </div>
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-[20px] border border-[#e3e8ef] bg-[#f6f8fb]">
-          <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <span className="text-[1.12rem] font-bold tracking-[-0.02em] text-[#72839a] md:text-[1.2rem]">투자 금액:</span>
-            <span className="text-[2rem] font-black tracking-[-0.05em] text-[#151b24] md:text-[2.25rem]">{formatPoints(invested)} 점</span>
+        <div className="mt-8 grid grid-cols-2 overflow-hidden rounded-[20px] border border-[#e3e8ef] bg-[#f6f8fb]">
+          <div className="flex items-center justify-between gap-4 px-5 py-4 md:px-6">
+            <span className="text-[1rem] font-bold tracking-[-0.02em] text-[#72839a] md:text-[1.1rem]">투자 금액</span>
+            <span className="text-[1.7rem] font-black tracking-[-0.05em] text-[#151b24] md:text-[1.95rem]">{formatPoints(invested)} 점</span>
           </div>
-          <div className="h-px bg-[#e1e7ef]" />
-          <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <span className="text-[1.12rem] font-bold tracking-[-0.02em] text-[#72839a] md:text-[1.2rem]">봇이 받는 금액:</span>
-            <span className="text-[2rem] font-black tracking-[-0.05em] text-[#17b587] md:text-[2.25rem]">{formatPoints(partnerReceived)} 점</span>
+          <div className="flex items-center justify-between gap-4 border-l border-[#e1e7ef] px-5 py-4 md:px-6">
+            <span className="text-[1rem] font-bold tracking-[-0.02em] text-[#72839a] md:text-[1.1rem]">봇이 받는 금액</span>
+            <span className="text-[1.7rem] font-black tracking-[-0.05em] text-[#17b587] md:text-[1.95rem]">{formatPoints(partnerReceived)} 점</span>
           </div>
         </div>
 
@@ -210,6 +245,212 @@ function InvestmentPanel({
           투자 확정
           <ArrowRight className="h-6 w-6" />
         </Button>
+      </div>
+    </section>
+  );
+}
+
+function ExperimentalAmountCircle({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="mb-5 text-[1.05rem] font-black tracking-[-0.04em] text-[#334038] md:text-[1.15rem]">{label}</div>
+      <div className="relative flex h-[204px] w-[204px] items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_28%,#ffffff_0%,#f8fbff_38%,#eef4fb_74%,#edf2f8_100%)] shadow-[0_24px_44px_rgba(196,208,220,0.2)]">
+        <div className="absolute top-[10px] z-10 rounded-full border-[5px] border-white shadow-[0_16px_24px_rgba(110,154,220,0.18)]">
+          <ParticipantAvatar alt="당신 아바타" className="h-[62px] w-[62px]" />
+        </div>
+        <div className="absolute inset-[18px] rounded-full border border-[#e8eef6]" />
+        <div className="absolute inset-[30px] rounded-full border border-[#f1f5fb]" />
+        <div className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-[linear-gradient(180deg,#1d63c7_0%,#0f8a67_100%)] shadow-[0_16px_28px_rgba(29,99,198,0.22)]">
+          <span className="text-[3rem] font-black tracking-[-0.09em] text-white">{formatPoints(value)}점</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExperimentalAllocationPie({
+  total,
+  returned,
+  kept,
+}: {
+  total: number;
+  returned: number;
+  kept: number;
+}) {
+  const safeTotal = Math.max(total, 1);
+  const returnedShare = (returned / safeTotal) * 100;
+  const keptShare = Math.max(100 - returnedShare, 0);
+  const returnedAngle = (returned / safeTotal) * 360;
+  const chartSize = 188;
+  const chartRadius = 94;
+  const chartCenter = chartSize / 2;
+  const returnedPath = describeSector(chartCenter, chartCenter, chartRadius, 0, returnedAngle);
+  const keptPath = describeSector(chartCenter, chartCenter, chartRadius, returnedAngle, 360);
+  const dividerPoint = polarToCartesian(chartCenter, chartCenter, chartRadius, returnedAngle);
+  const containerCenter = 126;
+  const labelRadius = 92;
+  const returnedMidAngle = returnedAngle / 2;
+  const keptMidAngle = returnedAngle + (360 - returnedAngle) / 2;
+  const returnedAnchor = polarToCartesian(containerCenter, containerCenter, labelRadius, returnedMidAngle);
+  const keptAnchor = polarToCartesian(containerCenter, containerCenter, labelRadius, keptMidAngle);
+
+  function FloatingValueCard({
+    tone,
+    value,
+    label,
+    avatar,
+    anchor,
+  }: {
+    tone: 'returned' | 'kept';
+    value: number;
+    label: string;
+    avatar: ReactNode;
+    anchor: { x: number; y: number };
+  }) {
+    const toneClasses =
+      tone === 'returned'
+        ? {
+            border: 'border-[#7eafff]',
+            shadow: 'shadow-[0_20px_34px_rgba(31,99,198,0.14)]',
+            text: 'text-[#1f63c6]',
+          }
+        : {
+            border: 'border-[#7fd5bb]',
+            shadow: 'shadow-[0_20px_34px_rgba(15,138,103,0.14)]',
+            text: 'text-[#0f8a67]',
+          };
+    const isLeftSide = anchor.x < containerCenter;
+    const transform = isLeftSide ? 'translate(-100%, -50%)' : 'translate(0, -50%)';
+
+    return (
+      <div
+        className="absolute"
+        style={{
+          left: `${anchor.x}px`,
+          top: `${anchor.y}px`,
+          transform,
+        }}
+      >
+        <div className={`relative flex h-[92px] w-[72px] flex-col items-center rounded-[18px] border-[4px] bg-white px-2 pt-[28px] text-center ${toneClasses.border} ${toneClasses.shadow}`}>
+          <div className="absolute left-1/2 top-[-20px] z-10 -translate-x-1/2 rounded-full border-[4px] border-white bg-white shadow-[0_10px_18px_rgba(110,154,220,0.16)]">
+            {avatar}
+          </div>
+          <div className={`text-[1.65rem] font-black leading-none tracking-[-0.08em] ${toneClasses.text}`}>
+            {formatPoints(value)}점
+          </div>
+          <div className={`mt-1 text-[0.66rem] font-black leading-[1.05] tracking-[-0.03em] ${toneClasses.text}`}>
+            {label}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="mb-5 text-[1.05rem] font-black tracking-[-0.04em] text-[#334038] md:text-[1.15rem]">총 금액 배분</div>
+      <div className="relative flex h-[252px] w-[252px] items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_28%,#ffffff_0%,#f9fbff_38%,#eef4fb_72%,#edf2f8_100%)] shadow-[0_24px_44px_rgba(196,208,220,0.2)]">
+        <div className="absolute inset-[16px] rounded-full border border-[#eef2f7]" />
+        <svg
+          viewBox={`0 0 ${chartSize} ${chartSize}`}
+          className="relative h-[188px] w-[188px] rounded-full border-[6px] border-white shadow-[0_16px_28px_rgba(24,45,76,0.14)]"
+          aria-label={`반환 ${Math.round(returnedShare)}퍼센트, 보유 ${Math.round(keptShare)}퍼센트`}
+        >
+          <defs>
+            <linearGradient id="mainReturnedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1f63c6" />
+              <stop offset="100%" stopColor="#3f88f2" />
+            </linearGradient>
+            <linearGradient id="mainKeptGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#0f8a67" />
+              <stop offset="100%" stopColor="#20b486" />
+            </linearGradient>
+            <clipPath id="mainPieClip">
+              <circle cx={chartCenter} cy={chartCenter} r={chartRadius} />
+            </clipPath>
+          </defs>
+          <circle cx={chartCenter} cy={chartCenter} r={chartRadius} fill="#f7fbff" />
+          <path d={returnedPath} fill="url(#mainReturnedGradient)" />
+          <path d={keptPath} fill="url(#mainKeptGradient)" />
+          <line
+            x1={chartCenter}
+            y1={chartCenter}
+            x2={chartCenter}
+            y2={chartCenter - chartRadius}
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth="2"
+          />
+          <line
+            x1={chartCenter}
+            y1={chartCenter}
+            x2={dividerPoint.x}
+            y2={dividerPoint.y}
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth="2"
+          />
+          <g clipPath="url(#mainPieClip)" opacity="0.22">
+            <circle cx="155" cy="72" r="54" fill="#ffffff" />
+            <path d="M20 184 L148 92 L228 190 L228 228 L20 228 Z" fill="#103f76" opacity="0.18" />
+            <path d="M82 24 L228 148 L228 228 L150 228 L36 112 Z" fill="#ffffff" opacity="0.12" />
+          </g>
+        </svg>
+
+        <FloatingValueCard
+          tone="kept"
+          value={kept}
+          label="봇 보유"
+          anchor={keptAnchor}
+          avatar={<BotAvatar alt="봇 아바타" className="h-[36px] w-[36px]" />}
+        />
+        <FloatingValueCard
+          tone="returned"
+          value={returned}
+          label="반환됨"
+          anchor={returnedAnchor}
+          avatar={<ParticipantAvatar alt="당신 아바타" className="h-[36px] w-[36px]" />}
+        />
+      </div>
+      <div className="mt-5 text-[1.05rem] font-black tracking-[-0.04em] text-[#647487]">
+        보유 {Math.round(keptShare)}% · 반환 {Math.round(returnedShare)}%
+      </div>
+    </div>
+  );
+}
+
+function ExperimentalResultPanel({
+  amountSent,
+  amountReceivedByPartner,
+  partnerReturnAmount,
+  partnerKept,
+}: {
+  amountSent: number;
+  amountReceivedByPartner: number;
+  partnerReturnAmount: number;
+  partnerKept: number;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[28px] border border-[#d5e3db] bg-white px-6 py-8 shadow-[0_18px_36px_rgba(192,205,213,0.14)] md:px-8 md:py-9">
+      <div className="mt-2 grid items-center gap-8 md:grid-cols-[240px_132px_252px] md:justify-between md:gap-4 md:-translate-x-4">
+        <ExperimentalAmountCircle label="당신의 투자액" value={amountSent} />
+
+        <div className="flex items-center justify-center self-center">
+          <div className="relative flex h-[64px] w-[132px] translate-x-2 items-center justify-center">
+            <div className="absolute inset-y-[21px] left-0 right-[20px] rounded-full bg-[linear-gradient(90deg,#14d8d8_0%,#3e5ff0_100%)] shadow-[0_10px_16px_rgba(61,110,233,0.18)]" />
+            <ArrowRight className="absolute right-0 h-[56px] w-[56px] fill-[#3e5ff0] text-[#3e5ff0] stroke-[1.7]" />
+          </div>
+        </div>
+
+        <ExperimentalAllocationPie
+          total={amountReceivedByPartner}
+          returned={partnerReturnAmount}
+          kept={partnerKept}
+        />
       </div>
     </section>
   );
@@ -230,76 +471,22 @@ function ResultRevealPanel({
   onNext?: () => void;
   showNextButton: boolean;
 }) {
-  const resultMultiplier =
-    trial.amount_sent > 0 ? Math.round(trial.amount_received_by_partner / trial.amount_sent) : 3;
   const partnerKept = Math.max(trial.amount_received_by_partner - trial.partner_return_amount, 0);
-  const roundEndowment = Math.max(trial.amount_sent + trial.amount_kept, 1);
-  const maxPartnerReceive = Math.max(roundEndowment * resultMultiplier, 1);
   const userNet = trial.partner_return_amount - trial.amount_sent;
   const partnerNet = partnerKept;
-  const transferWidth = (trial.amount_received_by_partner / maxPartnerReceive) * 100;
-  const returnWidth = (trial.partner_return_amount / maxPartnerReceive) * 100;
-  const scaleMax = Math.max(80, userBalance, botBalance);
-  const userWidth = Math.max((userBalance / scaleMax) * 100, userBalance > 0 ? 18 : 0);
-  const botWidth = Math.max((botBalance / scaleMax) * 100, botBalance > 0 ? 18 : 0);
+  const scaleMax = Math.max(80, userBalance, botBalance, 1);
+  const userWidth = (userBalance / scaleMax) * 100;
+  const botWidth = (botBalance / scaleMax) * 100;
   const roundLabel = `${String(trial.trial_within_partner).padStart(2, '0')} 라운드 종료 후 총액`;
 
   return (
     <div className="mx-auto flex w-full max-w-[820px] flex-col gap-5 md:gap-6">
-      <section className="mt-8 overflow-hidden rounded-[24px] border border-[#d5e3db] bg-white px-4 py-5 shadow-[0_12px_26px_rgba(192,205,213,0.14)] md:mt-9 md:px-7 md:py-6">
-        <div className="mx-auto max-w-[720px]">
-          <div className="mx-auto h-[9px] w-[220px] rounded-full bg-[#edf1f5] md:w-[260px]">
-            <div
-              className="h-full rounded-full bg-[linear-gradient(90deg,#0e8c68_0%,#1d63c7_100%)] transition-[width] duration-300"
-              style={{ width: `${Math.min(Math.max(transferWidth, 0), 100)}%` }}
-            />
-          </div>
-          <div className="mt-3 text-center">
-            <div className="inline-flex rounded-full bg-[#1f63c6] px-3 py-1.5 text-[0.82rem] font-black tracking-[-0.02em] text-white shadow-[0_8px_16px_rgba(31,99,198,0.16)] md:text-[0.88rem]">
-              {resultMultiplier}배 증액 (X{resultMultiplier})
-            </div>
-            <div className="mt-3 text-[1.2rem] font-black tracking-[-0.04em] text-[#1f63c6] md:text-[1.4rem]">
-              {formatPoints(trial.amount_received_by_partner)} 점 전달됨
-            </div>
-            <div className="mt-1 flex justify-center text-[#1f63c6]">
-              <ArrowRight className="h-7 w-7 stroke-[2.8] md:h-8 md:w-8" />
-            </div>
-          </div>
-
-          <div className="mt-6 grid items-start gap-4 md:grid-cols-[124px_1fr_124px] md:gap-6">
-            <div className="flex flex-col items-center text-center">
-              <div className="text-[0.92rem] font-bold tracking-[-0.02em] text-[#48544d] md:text-[0.98rem]">당신의 투자액</div>
-              <div className="mt-1.5 flex h-[56px] w-[56px] items-center justify-center rounded-[13px] bg-[#1cc08e] text-[1.5rem] font-black tracking-[-0.05em] text-white shadow-[0_8px_18px_rgba(28,192,142,0.18)] md:h-[60px] md:w-[60px] md:text-[1.65rem]">
-                {formatPoints(trial.amount_sent)}
-              </div>
-              <div className="mt-2 text-[0.86rem] font-black text-[#313b37]">점</div>
-            </div>
-
-            <div className="relative pt-4 text-center">
-              <div className="relative mx-auto h-[9px] w-[220px] max-w-full rounded-full bg-[#eef3f7] md:w-[280px]">
-                <div
-                  className="ml-auto h-full rounded-full bg-[#0e8c68] transition-[width] duration-300"
-                  style={{ width: `${Math.min(Math.max(returnWidth, 0), 100)}%` }}
-                />
-              </div>
-              <div className="relative mt-4 text-[2.15rem] font-black tracking-[-0.07em] text-[#0e8c68] md:text-[2.6rem]">
-                {formatPoints(trial.partner_return_amount)} 점 반환됨
-              </div>
-              <div className="mt-1 flex justify-center text-[#0e8c68]">
-                <ArrowLeft className="h-7 w-7 stroke-[2.8] md:h-8 md:w-8" />
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="text-[0.92rem] font-bold tracking-[-0.02em] text-[#48544d] md:text-[0.98rem]">봇의 보유액</div>
-              <div className="mt-1.5 flex h-[56px] w-[56px] items-center justify-center rounded-[13px] border-[3px] border-[#c8d8cf] bg-[#f6f8f9] text-[1.5rem] font-black tracking-[-0.05em] text-[#303936] md:h-[60px] md:w-[60px] md:text-[1.65rem]">
-                {formatPoints(partnerKept)}
-              </div>
-              <div className="mt-2 text-[0.86rem] font-black text-[#313b37]">점</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ExperimentalResultPanel
+        amountSent={trial.amount_sent}
+        amountReceivedByPartner={trial.amount_received_by_partner}
+        partnerReturnAmount={trial.partner_return_amount}
+        partnerKept={partnerKept}
+      />
 
       <section className="grid gap-3 md:grid-cols-2 md:gap-4">
         <div className="rounded-[20px] border border-[#cfe0d6] bg-white px-4 py-4 shadow-[0_10px_20px_rgba(192,205,213,0.12)] md:px-5 md:py-4">

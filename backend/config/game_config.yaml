@@ -39,19 +39,19 @@ rtg:
   partners:
     - name: "High Reciprocity"
       code: 1
-      mean_return_rate: [0.60, 0.80]
+      mean_return_rate: [0.45, 0.75]
       contingency_schedule_id: "high-reciprocity-default"
       clamp: [0.0, 1.0]
 
     - name: "Low Reciprocity"
       code: 2
-      mean_return_rate: [0.30, 0.50]
+      mean_return_rate: [0.25, 0.55]
       contingency_schedule_id: "low-reciprocity-default"
       clamp: [0.0, 1.0]
 
     - name: "Volatile Reciprocity"
       code: 3
-      mean_return_rate: [0.30, 0.80]
+      mean_return_rate: [0.25, 0.75]
       contingency_schedule_id: "volatile-uniform-sampled-v2"
       contingency_schedule:
         [
@@ -64,7 +64,7 @@ rtg:
           0.75,
           0.34,
           0.51,
-          0.31,
+          0.25,
           0.41,
           0.55,
           0.31,

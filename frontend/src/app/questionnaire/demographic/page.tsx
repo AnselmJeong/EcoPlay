@@ -1,23 +1,14 @@
-"use client";
-
-import type { QuestionnaireSchema } from "questionnaire-js";
-
 import QuestionnaireStagePage from "@/components/questionnaire/QuestionnaireStagePage";
-import demographicData from "@/questionnaires/demographic.json";
+import { getDemographicQuestionnaire } from "@/lib/questionnaireRegistry";
 
-const questionnaires = [
-  {
-    key: "demographic",
-    name: "인구학적 정보",
-    schema: demographicData as QuestionnaireSchema,
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function DemographicQuestionnairePage() {
+export default async function DemographicQuestionnairePage() {
+  const questionnaire = await getDemographicQuestionnaire();
   return (
     <QuestionnaireStagePage
       mode="demographic"
-      questionnaires={questionnaires}
+      questionnaires={[questionnaire]}
       previousRoute="/consent"
       completionRoute="/games"
     />

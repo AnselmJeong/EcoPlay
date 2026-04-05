@@ -180,6 +180,38 @@ class RTGTutorialService:
         self.db = db
         self.config = get_game_config()
 
+    def _hydrate_legacy_balances(self, session_ref, session: dict[str, Any]) -> dict[str, Any]:
+        if "current_balance" in session and "current_partner_balance" in session:
+            return session
+
+        rounds = sorted_docs(
+            self.db.collection(RTG_TUTORIAL_TRIALS).where("session_id", "==", session["session_id"]).stream(),
+            "trial_index",
+        )
+        current_balance = float(self.config.tutorial.endowment)
+        current_partner_balance = float(self.config.tutorial.endowment)
+
+        for round_data in rounds:
+            current_balance = round(current_balance + round_data.get("amount_kept", 0))
+            current_partner_balance = round(
+                current_partner_balance
+                - round_data.get("sender_investment", 0)
+                + round_data.get("return_amount", 0)
+            )
+
+        session_ref.update(
+            {
+                "current_balance": current_balance,
+                "current_partner_balance": current_partner_balance,
+                "cumulative_payoff": current_balance,
+                "updated_at": utcnow(),
+            }
+        )
+        session["current_balance"] = current_balance
+        session["current_partner_balance"] = current_partner_balance
+        session["cumulative_payoff"] = current_balance
+        return session
+
     def _current_prompt(self, session: dict[str, Any]) -> dict[str, Any] | None:
         if session["completed"]:
             return None
@@ -203,6 +235,9 @@ class RTGTutorialService:
             "config_version": self.config.version,
             "game_type": "rtg_tutorial",
             "completed_trials_count": 0,
+            "cumulative_payoff": float(self.config.tutorial.endowment),
+            "current_balance": float(self.config.tutorial.endowment),
+            "current_partner_balance": float(self.config.tutorial.endowment),
             "completed": False,
             "tutorial_completed": False,
             "comprehension_check_passed": False,
@@ -213,12 +248,14 @@ class RTGTutorialService:
         return self.get_session(user_id, session_id)
 
     def get_session(self, user_id: str, session_id: str) -> dict[str, Any]:
+        session_ref = self.db.collection(RTG_TUTORIAL_SESSIONS).document(session_id)
         session = get_document_or_404(
-            self.db.collection(RTG_TUTORIAL_SESSIONS).document(session_id),
+            session_ref,
             "RTG tutorial session not found.",
         )
         if session["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="This session belongs to another user.")
+        session = self._hydrate_legacy_balances(session_ref, session)
 
         return {
             "session_id": session["session_id"],
@@ -227,6 +264,11 @@ class RTGTutorialService:
             else ("completed" if session["comprehension_check_passed"] else "trial"),
             "total_trials": self.config.tutorial.trials,
             "completed_trials_count": session["completed_trials_count"],
+            "cumulative_payoff": session.get("cumulative_payoff", self.config.tutorial.endowment),
+            "current_balance": session.get("current_balance", self.config.tutorial.endowment),
+            "current_partner_balance": session.get("current_partner_balance", self.config.tutorial.endowment),
+            "endowment": self.config.tutorial.endowment,
+            "multiplier": self.config.tutorial.multiplier,
             "prompt": self._current_prompt(session),
             "tutorial_completed": session["tutorial_completed"],
             "comprehension_check_passed": session["comprehension_check_passed"],
@@ -245,6 +287,7 @@ class RTGTutorialService:
             raise HTTPException(status_code=403, detail="This session belongs to another user.")
         if session["completed"]:
             raise HTTPException(status_code=400, detail="Tutorial session is already completed.")
+        session = self._hydrate_legacy_balances(session_ref, session)
 
         prompt = self._current_prompt(session)
         if prompt is None:
@@ -256,6 +299,10 @@ class RTGTutorialService:
             raise HTTPException(status_code=400, detail="Return amount is out of range.")
 
         amount_kept = round(prompt["amount_received"] - return_amount)
+        current_balance = round(session.get("current_balance", self.config.tutorial.endowment))
+        current_partner_balance = round(session.get("current_partner_balance", self.config.tutorial.endowment))
+        updated_balance = round(current_balance + amount_kept)
+        updated_partner_balance = round(current_partner_balance - prompt["sender_investment"] + return_amount)
         trial_data = {
             "session_id": session_id,
             "user_id": user_id,
@@ -268,6 +315,8 @@ class RTGTutorialService:
             "amount_received": prompt["amount_received"],
             "return_amount": return_amount,
             "amount_kept": amount_kept,
+            "participant_balance_after_trial": updated_balance,
+            "partner_balance_after_trial": updated_partner_balance,
             "response_time_ms": response_time_ms,
             "created_at": utcnow(),
         }
@@ -278,6 +327,9 @@ class RTGTutorialService:
         session_ref.update(
             {
                 "completed_trials_count": completed_trials_count,
+                "cumulative_payoff": updated_balance,
+                "current_balance": updated_balance,
+                "current_partner_balance": updated_partner_balance,
                 "completed": completed,
                 "tutorial_completed": completed,
                 "updated_at": utcnow(),
@@ -388,14 +440,21 @@ class RTGSessionService:
         )
 
         if last_round and last_round.get("rtg_block_index") == session.get("current_block_index"):
-            current_partner_balance = last_round.get(
-                "partner_balance_after_trial",
-                round(
-                    last_round.get("amount_received_by_partner", 0) - last_round.get("partner_return_amount", 0)
-                ),
-            )
+            current_partner_balance = float(self.config.rtg.endowment)
+            current_block_rounds = [
+                round_data for round_data in rounds if round_data.get("rtg_block_index") == session.get("current_block_index")
+            ]
+            for round_data in current_block_rounds:
+                current_partner_balance = round_data.get(
+                    "partner_balance_after_trial",
+                    round(
+                        current_partner_balance
+                        + round_data.get("amount_received_by_partner", 0)
+                        - round_data.get("partner_return_amount", 0)
+                    ),
+                )
         else:
-            current_partner_balance = 0.0
+            current_partner_balance = float(self.config.rtg.endowment)
 
         session_ref.update(
             {
@@ -451,7 +510,7 @@ class RTGSessionService:
             "completed_trials_count": session["completed_trials_count"],
             "cumulative_payoff": session["cumulative_payoff"],
             "current_balance": session.get("current_balance", self.config.rtg.endowment),
-            "current_partner_balance": session.get("current_partner_balance", 0),
+            "current_partner_balance": session.get("current_partner_balance", self.config.rtg.endowment),
             "current_block_index": session["current_block_index"] if not session["completed"] else None,
             "current_trial_within_block": session["current_trial_within_block"] if session["status"] == "in_progress" else None,
             "overall_trial_index": None if session["completed"] else session["completed_trials_count"] + 1,
@@ -490,7 +549,7 @@ class RTGSessionService:
             "completed_trials_count": 0,
             "cumulative_payoff": float(self.config.rtg.endowment),
             "current_balance": float(self.config.rtg.endowment),
-            "current_partner_balance": 0.0,
+            "current_partner_balance": float(self.config.rtg.endowment),
             "status": "in_progress",
             "completed": False,
             "created_at": utcnow(),
@@ -533,7 +592,7 @@ class RTGSessionService:
         rtg_trial_index = session["completed_trials_count"] + 1
         amount_kept = round(available_balance - amount_sent)
         amount_received_by_partner = round(amount_sent * self.config.rtg.multiplier)
-        current_partner_balance = round(session.get("current_partner_balance", 0))
+        current_partner_balance = round(session.get("current_partner_balance", self.config.rtg.endowment))
 
         partner_engine = PartnerEngine(partner_config, block["partner_seed"])
         partner_response = partner_engine.generate_return(
@@ -664,7 +723,7 @@ class RTGSessionService:
                 "status": "in_progress",
                 "current_block_index": session["current_block_index"] + 1,
                 "current_trial_within_block": 1,
-                "current_partner_balance": 0.0,
+                "current_partner_balance": float(self.config.rtg.endowment),
                 "updated_at": utcnow(),
             }
 

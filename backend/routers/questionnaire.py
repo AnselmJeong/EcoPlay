@@ -1,14 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import Optional, Any
 from datetime import datetime
-from pydantic import BaseModel
-import os
+from typing import Any, Optional
 
-from core.firebase import get_firestore_client, verify_id_token
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from core.auth import (
+    get_current_user_optional,
+    require_matching_medical_record_number,
+)
+from core.firebase import get_firestore_client
 
 router = APIRouter(prefix="/questionnaire", tags=["questionnaire"])
 
-DEVELOPMENT = os.getenv("ENVIRONMENT", "development") == "development"
 QUESTIONNAIRE_ALIASES = {
     "demographic": {"demographic", "인구학적 정보"},
     "pcl_k5": {"pcl_k5", "PTSD 척도"},
@@ -27,37 +30,21 @@ def has_questionnaire(saved_questionnaires: list[str], questionnaire_key: str) -
     return any(item in aliases for item in saved_questionnaires)
 
 
-async def get_current_user_optional(request: Request) -> Optional[dict]:
-    auth_header = request.headers.get("Authorization")
-
-    if DEVELOPMENT and not auth_header:
-        return {
-            "uid": "12345678",
-            "email": "12345678@eco.play",
-        }
-
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid token")
-
-    id_token = auth_header.split(" ", 1)[1]
-    try:
-        return verify_id_token(id_token)
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Firebase token: {str(e)}")
-
-
 @router.post("/submit")
 async def submit_questionnaire(
     request: QuestionnaireSubmitRequest,
     current_user=Depends(get_current_user_optional),
 ):
     """설문지 응답 저장"""
+    participant_id = require_matching_medical_record_number(
+        current_user, request.medicalRecordNumber
+    )
     try:
         db = get_firestore_client()
 
         query = list(
             db.collection("questionnaire")
-            .where("user_id", "==", request.medicalRecordNumber)
+            .where("user_id", "==", participant_id)
             .limit(1)
             .stream()
         )
@@ -71,7 +58,7 @@ async def submit_questionnaire(
             saved_questionnaires.append(request.questionnaireName)
 
         data = {
-            "user_id": request.medicalRecordNumber,
+            "user_id": participant_id,
             "firebase_uid": current_user["uid"],
             "answers": {
                 **existing_answers,
@@ -110,8 +97,8 @@ async def submit_questionnaire(
             "message": "설문지가 성공적으로 제출되었습니다.",
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"설문지 제출 중 오류: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="설문지 제출 중 오류가 발생했습니다.") from exc
 
 
 @router.get("/check/{medical_record_number}")
@@ -120,12 +107,15 @@ async def check_questionnaire(
     current_user=Depends(get_current_user_optional),
 ):
     """설문지 완료 여부 확인"""
+    participant_id = require_matching_medical_record_number(
+        current_user, medical_record_number
+    )
     try:
         db = get_firestore_client()
 
         docs = list(
             db.collection("questionnaire")
-            .where("user_id", "==", medical_record_number)
+            .where("user_id", "==", participant_id)
             .stream()
         )
 
@@ -147,8 +137,8 @@ async def check_questionnaire(
             "submitted_at": latest.get("submitted_at"),
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"설문지 확인 중 오류: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="설문지 확인 중 오류가 발생했습니다.") from exc
 
 
 @router.get("/detail/{medical_record_number}")
@@ -157,12 +147,15 @@ async def get_questionnaire_detail(
     current_user=Depends(get_current_user_optional),
 ):
     """설문지 저장 상세 조회"""
+    participant_id = require_matching_medical_record_number(
+        current_user, medical_record_number
+    )
     try:
         db = get_firestore_client()
 
         docs = list(
             db.collection("questionnaire")
-            .where("user_id", "==", medical_record_number)
+            .where("user_id", "==", participant_id)
             .limit(1)
             .stream()
         )
@@ -188,5 +181,5 @@ async def get_questionnaire_detail(
             "saved_questionnaires": saved_questionnaires,
             "submitted_at": latest.get("submitted_at"),
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"설문지 상세 조회 중 오류: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="설문지 상세 조회 중 오류가 발생했습니다.") from exc

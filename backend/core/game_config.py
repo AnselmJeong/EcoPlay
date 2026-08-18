@@ -6,7 +6,6 @@ from pydantic import ValidationError
 
 from schemas.game_config import GameConfig
 
-
 _game_config: GameConfig | None = None
 
 

@@ -1,16 +1,15 @@
 from __future__ import annotations
 
+import random
 from datetime import datetime
 from typing import Any
 from uuid import uuid4
-import random
 
 from fastapi import HTTPException
 
 from core.game_config import get_game_config
 from engine.partner import PartnerEngine
 from engine.pgg import PGGEngine
-
 
 PGG_SESSIONS = "pgg_sessions"
 PGG_TRIALS = "pgg_trials"

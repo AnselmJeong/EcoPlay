@@ -1,5 +1,6 @@
+from typing import Any, Dict, Optional
+
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
 
 
 class LLMMessage(BaseModel):
@@ -19,3 +20,8 @@ class MessageResponse(BaseModel):
     content: str
     role: str
     timestamp: str
+
+
+class MessageFeedbackRequest(BaseModel):
+    message_id: str
+    helpful: bool

@@ -1,6 +1,19 @@
 import { auth } from '@/lib/firebase';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+function getApiBaseUrl(): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '');
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+
+  throw new Error('NEXT_PUBLIC_API_URL is required for a production build.');
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface SessionState {
   session_id: string;
@@ -115,6 +128,30 @@ export interface RTGPostBlockResponse {
     willingness_to_play_again: number;
   };
   completed: boolean;
+}
+
+export interface AllGameReportResponse {
+  overall_summary: {
+    games_played: {
+      public_goods: number;
+      rtg_tutorial: number;
+      trust_game: number;
+    };
+    expected_rounds_by_game: {
+      public_goods: number;
+      rtg_tutorial: number;
+      trust_game: number;
+    };
+    sessions_completed: {
+      public_goods: boolean;
+      rtg_tutorial: boolean;
+      trust_game: boolean;
+    };
+    questionnaire_ready: boolean;
+    completed_rounds: number;
+    expected_rounds: number;
+    overall_percentage: number;
+  };
 }
 
 // Firebase Auth 토큰 가져오기 함수
@@ -248,7 +285,7 @@ export const messageAPI = {
 
 export const reportAPI = {
   getGameReport: async () => apiCall('/report/games'),
-  getAllGamesReport: async () => apiCall('/report/all'),
+  getAllGamesReport: async () => apiCall<AllGameReportResponse>('/report/all'),
   getPublicGoodsReport: async () => apiCall('/report/public-goods'),
   getRTGTutorialReport: async () => apiCall('/report/rtg-tutorial'),
   getTrustGameReport: async () => apiCall('/report/trust-game'),

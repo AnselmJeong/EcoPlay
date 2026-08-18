@@ -1,16 +1,15 @@
 import type { NextConfig } from 'next';
 import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
+import path from 'node:path';
 
 export default function nextConfig(phase: string): NextConfig {
   const isDevServer = phase === PHASE_DEVELOPMENT_SERVER;
 
   return {
     distDir: isDevServer ? '.next-dev' : '.next',
-    typescript: {
-      ignoreBuildErrors: true,
-    },
-    eslint: {
-      ignoreDuringBuilds: true,
+    outputFileTracingRoot: path.join(process.cwd(), '..'),
+    outputFileTracingIncludes: {
+      '/*': ['../questionnaire/**/*'],
     },
     images: {
       remotePatterns: [

@@ -13,10 +13,22 @@ check_port() {
   fi
 }
 
-if [ -s "$HOME/.nvm/nvm.sh" ]; then
-  export NVM_DIR="$HOME/.nvm"
-  . "$NVM_DIR/nvm.sh"
-  nvm use "$(cat "$ROOT_DIR/.nvmrc")" >/dev/null
+export NVM_DIR="$HOME/.nvm"
+if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+  echo "Error: NVM is required to start EcoPlay with Node.js 22."
+  echo "Install NVM and Node.js $(cat "$ROOT_DIR/.nvmrc"), then run start.sh again."
+  exit 1
+fi
+
+. "$NVM_DIR/nvm.sh"
+NODE_VERSION="$(cat "$ROOT_DIR/.nvmrc")"
+nvm use "$NODE_VERSION" >/dev/null
+export PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
+hash -r
+
+if [ "$(node --version | cut -d. -f1)" != "v22" ]; then
+  echo "Error: EcoPlay requires Node.js 22, but $(node --version) is active."
+  exit 1
 fi
 
 check_port 8000 "backend"
@@ -50,7 +62,7 @@ cleanup() {
 # Start backend (FastAPI)
 echo "→ Starting backend (FastAPI) on http://localhost:8000"
 cd "$ROOT_DIR/backend"
-spawn_in_new_session 'exec uv run uvicorn main:app --reload'
+spawn_in_new_session 'ENVIRONMENT=development exec uv run uvicorn main:app --reload'
 BACKEND_PID=$SPAWNED_PID
 
 # Start frontend (Next.js)

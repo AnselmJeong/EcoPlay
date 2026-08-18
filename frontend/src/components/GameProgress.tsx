@@ -5,29 +5,64 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Users, Clock, CheckCircle2 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { getGameProgress } from '@/services/gameService';
+import { reportAPI } from '@/lib/api';
 
 interface GameProgressProps {
   className?: string;
 }
 
+interface ProgressSection {
+  completed: number;
+  total: number;
+  percentage: number;
+}
+
+interface ProgressData {
+  overall: ProgressSection;
+  trustGame: ProgressSection;
+  publicGoods: ProgressSection;
+}
+
 export default function GameProgress({ className = "" }: GameProgressProps) {
-  const [progressData, setProgressData] = useState<any>(null);
+  const [progressData, setProgressData] = useState<ProgressData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { getMedicalRecordNumber } = useAuth();
 
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        const medicalRecordNumber = getMedicalRecordNumber();
-        if (!medicalRecordNumber) {
-          setIsLoading(false);
-          return;
-        }
+        const report = await reportAPI.getAllGamesReport();
+        const summary = report.overall_summary;
+        const trustCompleted =
+          summary.games_played.rtg_tutorial + summary.games_played.trust_game;
+        const trustTotal =
+          summary.expected_rounds_by_game.rtg_tutorial +
+          summary.expected_rounds_by_game.trust_game;
 
-        const progress = await getGameProgress(medicalRecordNumber);
-        setProgressData(progress);
+        setProgressData({
+          overall: {
+            completed: summary.completed_rounds,
+            total: summary.expected_rounds,
+            percentage: summary.overall_percentage,
+          },
+          trustGame: {
+            completed: trustCompleted,
+            total: trustTotal,
+            percentage: trustTotal
+              ? Math.round((trustCompleted / trustTotal) * 100)
+              : 0,
+          },
+          publicGoods: {
+            completed: summary.games_played.public_goods,
+            total: summary.expected_rounds_by_game.public_goods,
+            percentage: summary.expected_rounds_by_game.public_goods
+              ? Math.round(
+                  (summary.games_played.public_goods /
+                    summary.expected_rounds_by_game.public_goods) *
+                    100
+                )
+              : 0,
+          },
+        });
       } catch (error) {
         console.error('게임 진행률 로딩 오류:', error);
       } finally {
@@ -36,7 +71,7 @@ export default function GameProgress({ className = "" }: GameProgressProps) {
     };
 
     loadProgress();
-  }, [getMedicalRecordNumber]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -143,4 +178,4 @@ export default function GameProgress({ className = "" }: GameProgressProps) {
       </CardContent>
     </Card>
   );
-} 
+}

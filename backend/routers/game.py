@@ -21,7 +21,6 @@ from services.game_sessions import (
     RTGTutorialService,
 )
 
-
 router = APIRouter(prefix="/game", tags=["game"])
 
 

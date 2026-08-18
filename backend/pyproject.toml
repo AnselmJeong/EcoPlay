@@ -13,3 +13,15 @@ dependencies = [
     "firebase-admin>=6.9.0",
     "pyyaml>=6.0.2",
 ]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "db*", "engine*", "routers*", "schemas*", "services*"]
+exclude = ["secret*", "tests*"]

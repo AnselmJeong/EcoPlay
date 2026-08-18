@@ -1,9 +1,10 @@
-import firebase_admin
-from firebase_admin import credentials, auth, firestore
-from typing import Optional
-import os
 import logging
+import os
 from pathlib import Path
+from typing import Optional
+
+import firebase_admin
+from firebase_admin import auth, credentials, firestore
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -11,33 +12,31 @@ logger = logging.getLogger(__name__)
 
 SECRET_DIR = Path(__file__).resolve().parent.parent / "secret"
 DEFAULT_CRED_PATH = SECRET_DIR / "ecoplay.json"
-LEGACY_CRED_PATH = SECRET_DIR / "ecoplay.json"
 
 firebase_app: Optional[firebase_admin.App] = None
 
 
-def get_credential_path() -> Path:
-    if DEFAULT_CRED_PATH.exists():
-        return DEFAULT_CRED_PATH
-    return LEGACY_CRED_PATH
+def get_local_credential_path() -> Path | None:
+    """Return the local development key when one is available.
+
+    Cloud Run must use Application Default Credentials from its service account,
+    so the JSON key is only a local-development fallback.
+    """
+    return DEFAULT_CRED_PATH if DEFAULT_CRED_PATH.exists() else None
 
 
 def init_firebase() -> firebase_admin.App:
     global firebase_app
     try:
         if not firebase_admin._apps:
-            cred_path = get_credential_path()
-            logger.info(f"Firebase 초기화 시작. Credential 경로: {cred_path}")
-
-            # credential 파일 존재 확인
-            if not cred_path.exists():
-                logger.error(f"Credential 파일을 찾을 수 없습니다: {cred_path}")
-                raise FileNotFoundError(
-                    f"Credential 파일을 찾을 수 없습니다: {cred_path}"
-                )
-
-            cred = credentials.Certificate(str(cred_path))
-            firebase_app = firebase_admin.initialize_app(cred)
+            cred_path = get_local_credential_path()
+            if cred_path is not None and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+                logger.info("로컬 Firebase service account로 초기화합니다.")
+                cred = credentials.Certificate(str(cred_path))
+                firebase_app = firebase_admin.initialize_app(cred)
+            else:
+                logger.info("Application Default Credentials로 Firebase를 초기화합니다.")
+                firebase_app = firebase_admin.initialize_app()
             logger.info("Firebase 초기화 완료")
         else:
             firebase_app = firebase_admin.get_app()
@@ -61,13 +60,9 @@ def verify_id_token(id_token: str) -> dict:
             logger.info("Firebase 초기화되지 않음. 초기화 시도...")
             init_firebase()
 
-        logger.info("토큰 검증 시작")
         decoded_token = auth.verify_id_token(id_token)
-        logger.info(f"토큰 검증 성공. UID: {decoded_token.get('uid', 'Unknown')}")
         return decoded_token
     except Exception as e:
-        logger.error(f"토큰 검증 실패: {str(e)}")
-        logger.error(
-            f"토큰: {id_token[:50]}..." if len(id_token) > 50 else f"토큰: {id_token}"
-        )
+        # ID tokens are credentials and must never be copied into logs.
+        logger.warning("Firebase ID token 검증에 실패했습니다: %s", type(e).__name__)
         raise

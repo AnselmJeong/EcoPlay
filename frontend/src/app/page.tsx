@@ -1,19 +1,18 @@
 "use client";
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { UserPlus, Handshake, LogOut } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { consentAPI, questionnaireAPI } from '@/lib/api';
 
 
 export default function LandingPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { user, logout, loading, getMedicalRecordNumber, isPasswordDefault } = useAuth();
+  const { user, loading, getMedicalRecordNumber } = useAuth();
   const router = useRouter();
 
   const handleAuthSuccess = async () => {
@@ -46,50 +45,10 @@ export default function LandingPage() {
 
   const handleResearchParticipation = async () => {
     if (user) {
-      // 이미 로그인된 상태에서 기본 비밀번호인지 확인
-      const medicalRecordNumber = getMedicalRecordNumber();
-      if (medicalRecordNumber) {
-        const passwordChangedKey = `password_changed_${medicalRecordNumber}`;
-        const hasChangedPassword = localStorage.getItem(passwordChangedKey) === 'true';
-        
-        if (!hasChangedPassword) {
-          // 기본 비밀번호라면 비밀번호 변경을 위해 모달 열기
-          setIsAuthModalOpen(true);
-        } else {
-          // 이미 비밀번호를 변경했다면 동의서 확인 후 적절한 페이지로 이동
-          try {
-            const consentData = await consentAPI.checkConsent(medicalRecordNumber);
-
-            if (consentData.exists && consentData.consent_given) {
-              const questionnaireStatus = await questionnaireAPI.checkStatus(medicalRecordNumber);
-              if (questionnaireStatus.demographic_completed) {
-                router.push('/games');
-              } else {
-                router.push('/questionnaire/demographic');
-              }
-            } else {
-              router.push('/consent');
-            }
-          } catch (error) {
-            console.error('상태 확인 오류:', error);
-            router.push('/consent');
-          }
-        }
-      } else {
-        // 병록번호를 가져올 수 없으면 모달 열기
-        setIsAuthModalOpen(true);
-      }
+      await handleAuthSuccess();
     } else {
       // 로그인되지 않은 상태라면 로그인 모달 열기
       setIsAuthModalOpen(true);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('로그아웃 오류:', error);
     }
   };
 
@@ -136,12 +95,12 @@ export default function LandingPage() {
                 </p>
                 
                 <Button 
-                  onClick={() => setIsAuthModalOpen(true)}
+                  onClick={handleResearchParticipation}
                   size="lg" 
                   className="bg-orange-500 hover:bg-orange-600 text-white px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-semibold rounded-lg shadow-xl transform transition-all duration-200 hover:scale-105"
                 >
-                  <UserPlus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-                  회원가입/로그인
+                  <LogIn className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                  {user ? '연구 계속하기' : '로그인'}
                 </Button>
               </div>
             </div>

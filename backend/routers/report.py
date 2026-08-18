@@ -15,7 +15,6 @@ from services.game_sessions import (
     sorted_docs,
 )
 
-
 router = APIRouter(prefix="/report", tags=["report"])
 
 
@@ -148,6 +147,11 @@ async def get_all_game_report(current_user=Depends(get_current_user_optional)):
                 "public_goods": pgg_completed,
                 "rtg_tutorial": tutorial_completed,
                 "trust_game": rtg_completed,
+            },
+            "expected_rounds_by_game": {
+                "public_goods": config.pgg.trials,
+                "rtg_tutorial": config.tutorial.trials,
+                "trust_game": config.rtg.trials_per_partner * len(config.rtg.partners),
             },
             "sessions_completed": {
                 "public_goods": pgg_session is not None,

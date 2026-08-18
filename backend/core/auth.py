@@ -5,8 +5,7 @@ from fastapi import HTTPException, Request, status
 
 from core.firebase import verify_id_token
 
-
-DEVELOPMENT = os.getenv("ENVIRONMENT", "development") == "development"
+DEVELOPMENT = os.getenv("ENVIRONMENT", "production").strip().lower() == "development"
 
 
 def build_dev_user() -> dict:
@@ -26,6 +25,20 @@ def extract_medical_record_number(current_user: dict) -> str:
     return current_user["uid"]
 
 
+def require_matching_medical_record_number(
+    current_user: dict,
+    medical_record_number: str,
+) -> str:
+    """Ensure a participant can only address their own research record."""
+    authenticated_number = extract_medical_record_number(current_user)
+    if medical_record_number != authenticated_number:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only access your own participant record",
+        )
+    return authenticated_number
+
+
 async def get_current_user_optional(request: Request) -> Optional[dict]:
     auth_header = request.headers.get("Authorization")
 
@@ -39,7 +52,7 @@ async def get_current_user_optional(request: Request) -> Optional[dict]:
     try:
         return verify_id_token(id_token)
     except Exception as exc:
-        raise HTTPException(status_code=401, detail=f"Invalid Firebase token: {exc}") from exc
+        raise HTTPException(status_code=401, detail="Invalid Firebase token") from exc
 
 
 async def get_current_user(request: Request) -> dict:

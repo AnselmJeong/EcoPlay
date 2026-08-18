@@ -1,31 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
-from typing import List
 import random
 from datetime import datetime
 
-from schemas.message import LLMMessage, MessageRequest, MessageResponse
-from core.firebase import get_firestore_client, verify_id_token
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 
-
-# 인증 의존성 (순환 import 방지)
-async def get_current_user(request):
-    from fastapi import HTTPException, status
-
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or invalid token"
-        )
-    id_token = auth_header.split(" ", 1)[1]
-    try:
-        decoded_token = verify_id_token(id_token)
-        return decoded_token
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Firebase token"
-        )
-
+from core.auth import get_current_user
+from core.firebase import get_firestore_client
+from schemas.message import MessageFeedbackRequest, MessageRequest, MessageResponse
 
 router = APIRouter(prefix="/message", tags=["message"])
 
@@ -107,8 +88,10 @@ async def generate_game_message(
             timestamp=datetime.utcnow().isoformat(),
         )
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"메시지 생성 중 오류: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="메시지 생성 중 오류가 발생했습니다.") from exc
 
 
 @router.get("/history")
@@ -130,23 +113,23 @@ async def get_message_history(game_type: str = None, user=Depends(get_current_us
 
         return {"messages": messages}
 
-    except Exception as e:
+    except Exception as exc:
         raise HTTPException(
-            status_code=500, detail=f"메시지 기록 조회 중 오류: {str(e)}"
-        )
+            status_code=500, detail="메시지 기록 조회 중 오류가 발생했습니다."
+        ) from exc
 
 
 @router.post("/feedback")
 async def save_user_feedback(
-    message_id: str, helpful: bool, user=Depends(get_current_user)
+    request: MessageFeedbackRequest, user=Depends(get_current_user)
 ):
     """사용자 피드백 저장"""
     try:
         db = get_firestore_client()
         feedback_data = {
             "user_id": user["uid"],
-            "message_id": message_id,
-            "helpful": helpful,
+            "message_id": request.message_id,
+            "helpful": request.helpful,
             "timestamp": datetime.utcnow().isoformat(),
         }
 
@@ -154,5 +137,5 @@ async def save_user_feedback(
 
         return {"success": True, "message": "피드백이 저장되었습니다"}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"피드백 저장 중 오류: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="피드백 저장 중 오류가 발생했습니다.") from exc

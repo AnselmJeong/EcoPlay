@@ -81,6 +81,18 @@ class PGGEngineTest(unittest.TestCase):
         )
         self.assertEqual(result.other_contributions, [1.2, 0.9, 0.5, 1.8])
 
+    def test_uniform_random_strategy_stays_in_configured_range(self):
+        config = build_config().pgg
+        config.simulated_agents.strategy = "uniform_random"
+        engine = PGGEngine(config, seed=123)
+
+        result = engine.simulate_trial(participant_contribution=3, trial_index=1)
+
+        self.assertEqual(len(result.other_contributions), config.group_size - 1)
+        self.assertTrue(
+            all(0.5 <= contribution <= 4.5 for contribution in result.other_contributions)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

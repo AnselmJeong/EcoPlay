@@ -1,31 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
-from typing import Dict, List
 import random
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+
+from core.auth import get_current_user
+from core.firebase import get_firestore_client
 from schemas.match import MatchRequest, MatchResult
-from core.firebase import get_firestore_client, verify_id_token
-
-
-# 인증 의존성 (순환 import 방지)
-async def get_current_user(request):
-    from fastapi import HTTPException, status
-
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or invalid token"
-        )
-    id_token = auth_header.split(" ", 1)[1]
-    try:
-        decoded_token = verify_id_token(id_token)
-        return decoded_token
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Firebase token"
-        )
-
 
 router = APIRouter(prefix="/match", tags=["match"])
 
@@ -93,8 +74,10 @@ async def match_trust_game_opponent(
             description=selected_personality["description"],
         )
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"매칭 중 오류: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="매칭 중 오류가 발생했습니다.") from exc
 
 
 @router.get("/trust-game/personalities")
@@ -118,5 +101,5 @@ async def get_match_history(user=Depends(get_current_user)):
 
         return {"match_history": history}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"매칭 기록 조회 중 오류: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="매칭 기록 조회 중 오류가 발생했습니다.") from exc

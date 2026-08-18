@@ -208,6 +208,7 @@ export default function QuestionnaireStagePage({
                 formId={`${mode}-${currentQuestionnaire.key}`}
                 questionnaire={currentQuestionnaire.schema}
                 onComplete={handleAnswer}
+                initialAnswers={questionnaireAnswers[currentQuestionnaire.key] ?? {}}
               />
             </div>
 

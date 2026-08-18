@@ -57,6 +57,9 @@ class PGGEngine:
                 for bot in self.config.simulated_agents.bots
             ]
 
+        contribution_min, contribution_max = (
+            self.config.simulated_agents.contribution_range
+        )
         other_contributions: list[float] = []
         for player_index in range(1, self.config.group_size):
             ratio = self._rng(trial_index, player_index).uniform(contribution_min, contribution_max)

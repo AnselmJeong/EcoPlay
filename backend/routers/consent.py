@@ -1,18 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import JSONResponse
-from typing import Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel
-import os
 
-# 스키마 임시 제거 - 인라인으로 정의
-from core.firebase import get_firestore_client, verify_id_token
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from core.auth import (
+    get_current_user_optional,
+    require_matching_medical_record_number,
+)
+from core.firebase import get_firestore_client
 
 router = APIRouter(prefix="/consent", tags=["consent"])
-
-# 개발 환경 확인
-DEVELOPMENT = os.getenv("ENVIRONMENT", "development") == "development"
-
 
 # 동의서 스키마
 class ConsentDetails(BaseModel):
@@ -28,57 +25,22 @@ class ConsentRequest(BaseModel):
     consentDetails: ConsentDetails
 
 
-# 옵셔널 인증 의존성 (개발 환경에서는 우회 가능)
-async def get_current_user_optional(request: Request) -> Optional[dict]:
-    auth_header = request.headers.get("Authorization")
-
-    if DEVELOPMENT and not auth_header:
-        # 개발 환경에서 토큰이 없으면 더미 사용자 반환
-        return {
-            "uid": "12345678",
-            "email": "12345678@eco.play",
-            "auth_time": 1234567890,
-            "iss": "https://securetoken.google.com/ecoplay-6fd53",
-            "aud": "ecoplay-6fd53",
-        }
-
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid token")
-
-    id_token = auth_header.split(" ", 1)[1]
-    try:
-        decoded_token = verify_id_token(id_token)
-        return decoded_token
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Firebase token: {str(e)}")
-
-
-# 인증 의존성
-async def get_current_user(request: Request):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid token")
-    id_token = auth_header.split(" ", 1)[1]
-    try:
-        decoded_token = verify_id_token(id_token)
-        return decoded_token
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid Firebase token")
-
-
 @router.post("/submit")
 async def submit_consent(
     request: ConsentRequest, current_user=Depends(get_current_user_optional)
 ):
     """동의서 제출"""
+    participant_id = require_matching_medical_record_number(
+        current_user, request.medicalRecordNumber
+    )
     try:
         db = get_firestore_client()
 
         consent_data = {
-            "user_id": request.medicalRecordNumber,
-            "user_email": f"{request.medicalRecordNumber}@eco.play",
+            "user_id": participant_id,
+            "user_email": f"{participant_id}@eco.play",
             "consent_given": request.consentGiven,
-            "consent_details": request.consentDetails.dict(),
+            "consent_details": request.consentDetails.model_dump(),
             "consent_timestamp": datetime.utcnow(),
             "created_at": datetime.utcnow(),
             "firebase_uid": current_user["uid"],
@@ -92,8 +54,8 @@ async def submit_consent(
             "message": "동의서가 성공적으로 제출되었습니다.",
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"동의서 제출 중 오류: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="동의서 제출 중 오류가 발생했습니다.") from exc
 
 
 @router.get("/check/{medical_record_number}")
@@ -101,11 +63,14 @@ async def check_consent(
     medical_record_number: str, current_user=Depends(get_current_user_optional)
 ):
     """동의서 상태 확인"""
+    participant_id = require_matching_medical_record_number(
+        current_user, medical_record_number
+    )
     try:
         db = get_firestore_client()
 
         query = db.collection("basic_info").where(
-            "user_id", "==", medical_record_number
+            "user_id", "==", participant_id
         )
         docs = list(query.stream())
 
@@ -124,8 +89,8 @@ async def check_consent(
             "document_id": latest_doc.id,
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"동의서 확인 중 오류: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="동의서 확인 중 오류가 발생했습니다.") from exc
 
 
 @router.get("/list")
@@ -159,10 +124,10 @@ async def get_consent_list(current_user=Depends(get_current_user_optional)):
 
         return {"consents": consents, "total": len(consents)}
 
-    except Exception as e:
+    except Exception as exc:
         raise HTTPException(
-            status_code=500, detail=f"동의서 목록 조회 중 오류: {str(e)}"
-        )
+            status_code=500, detail="동의서 목록 조회 중 오류가 발생했습니다."
+        ) from exc
 
 
 @router.put("/update/{document_id}")
@@ -172,6 +137,7 @@ async def update_consent(
     current_user=Depends(get_current_user_optional),
 ):
     """동의서 수정"""
+    require_matching_medical_record_number(current_user, request.medicalRecordNumber)
     try:
         db = get_firestore_client()
 
@@ -190,7 +156,7 @@ async def update_consent(
         # 업데이트 데이터
         update_data = {
             "consent_given": request.consentGiven,
-            "consent_details": request.consentDetails.dict(),
+            "consent_details": request.consentDetails.model_dump(),
             "updated_at": datetime.utcnow(),
         }
 
@@ -202,8 +168,10 @@ async def update_consent(
             "message": "동의서가 성공적으로 수정되었습니다.",
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"동의서 수정 중 오류: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="동의서 수정 중 오류가 발생했습니다.") from exc
 
 
 @router.delete("/delete/{document_id}")
@@ -234,5 +202,7 @@ async def delete_consent(
             "message": "동의서가 성공적으로 삭제되었습니다.",
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"동의서 삭제 중 오류: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="동의서 삭제 중 오류가 발생했습니다.") from exc

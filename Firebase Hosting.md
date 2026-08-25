@@ -446,11 +446,10 @@ App Hosting URL을 Chrome Incognito window에서 엽니다.
 1. 로그인
 2. 동의서 제출
 3. demographic questionnaire 제출
-4. Public Goods Game session 시작
-5. trial 하나 제출
-6. RTG tutorial 실행
-7. report 페이지 열기
-8. Firestore Console에서 문서가 생성됐는지 확인
+4. RTG tutorial 실행
+5. RTG main session에서 trial 하나 제출
+6. report 페이지 열기
+7. Firestore Console에서 문서가 생성됐는지 확인
 
 브라우저 개발자 도구에서:
 

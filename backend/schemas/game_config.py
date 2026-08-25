@@ -3,46 +3,6 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 
-class PGGBotProfileConfig(BaseModel):
-    name: str | None = None
-    base_contribution_ratio: float = Field(ge=0.0, le=1.0)
-    responsiveness: float = Field(ge=0.0)
-
-
-class PGGSimulatedAgentsConfig(BaseModel):
-    contribution_range: tuple[float, float]
-    strategy: Literal["uniform_random", "fixed", "conditional_cooperation"]
-    reference_contribution_ratio: float = Field(default=0.25, ge=0.0, le=1.0)
-    bots: list[PGGBotProfileConfig] = Field(default_factory=list)
-
-    @model_validator(mode="after")
-    def validate_range(self):
-        lower, upper = self.contribution_range
-        if not 0.0 <= lower <= upper <= 1.0:
-            raise ValueError("PGG contribution_range must stay within [0, 1].")
-        if self.strategy in {"fixed", "conditional_cooperation"} and not self.bots:
-            raise ValueError(f"PGG strategy '{self.strategy}' requires bot profiles.")
-        for bot in self.bots:
-            if not lower <= bot.base_contribution_ratio <= upper:
-                raise ValueError("PGG bot base_contribution_ratio must stay within contribution_range.")
-        return self
-
-
-class PGGConfig(BaseModel):
-    trials: int = Field(gt=0)
-    blocks: int = Field(gt=0)
-    endowment: float = Field(gt=0)
-    group_size: int = Field(gt=1)
-    multiplier: float = Field(gt=0)
-    simulated_agents: PGGSimulatedAgentsConfig
-
-    @model_validator(mode="after")
-    def validate_simulated_agents(self):
-        if self.simulated_agents.bots and len(self.simulated_agents.bots) != self.group_size - 1:
-            raise ValueError("PGG bot profile count must match group_size - 1.")
-        return self
-
-
 class TutorialConfig(BaseModel):
     trials: int = Field(gt=0)
     role: Literal["trustee"]
@@ -119,7 +79,6 @@ class PostBlockQuestionsConfig(BaseModel):
 
 class GameConfig(BaseModel):
     version: str
-    pgg: PGGConfig
     tutorial: TutorialConfig
     rtg: RTGConfig
     post_block_questions: PostBlockQuestionsConfig

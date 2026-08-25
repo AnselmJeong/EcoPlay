@@ -11,7 +11,7 @@ class LLMMessage(BaseModel):
 
 
 class MessageRequest(BaseModel):
-    game_type: str  # 'public_goods', 'trust_game_receiver', 'trust_game_trustee'
+    game_type: str  # 'trust_game_receiver' or 'trust_game_trustee'
     round: int
     performance_data: Optional[Dict[str, Any]] = None
 

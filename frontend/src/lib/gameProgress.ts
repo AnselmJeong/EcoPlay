@@ -5,9 +5,7 @@ export async function hasCompletedAllGames() {
     const report = await reportAPI.getAllGamesReport();
     const completed = report?.overall_summary?.sessions_completed;
     return Boolean(
-      completed?.public_goods &&
-        completed?.rtg_tutorial &&
-        completed?.trust_game
+      completed?.rtg_tutorial && completed?.trust_game
     );
   } catch {
     return false;

@@ -20,7 +20,7 @@
 
 | Variable name | Type | Source | Description |
 |---|---|---|---|
-| participant_id | string | 🔴 RECORDED | 각 참가자에게 부여되는 고유 익명 식별자이다. 이름이나 주민번호 같은 개인정보를 직접 저장하지 않고, 연구용 익명 ID로 관리하는 것이 원칙이다. 이후 모든 설문, PGG, RTG trial 데이터는 이 ID를 기준으로 연결된다. |
+| participant_id | string | 🔴 RECORDED | 각 참가자에게 부여되는 고유 익명 식별자이다. 이름이나 주민번호 같은 개인정보를 직접 저장하지 않고, 연구용 익명 ID로 관리하는 것이 원칙이다. 이후 모든 설문과 RTG trial 데이터는 이 ID를 기준으로 연결된다. |
 | session_date | datetime | 🔴 RECORDED | 참가자가 실험에 참여한 날짜와 시간이다. 세션 효과(오전/오후, 특정 기간의 모집군 차이), 데이터 누락 점검, 재현성 확인에 중요하다. `YYYY-MM-DD HH:MM:SS` 형식으로 저장한다. |
 | age | int | 🔴 RECORDED | 참가자의 만 나이이다. 사회불안, 의사결정, 반응속도 모두 연령의 영향을 받을 수 있으므로 분석에서 핵심 공변량 후보이다. 본 연구의 포함 기준은 만 16세 이상 29세 미만이다. |
 | sex_at_birth | categorical | 🔴 RECORDED | 출생 시 지정된 생물학적 성별이다(male / female / intersex). 생물학적 요인이나 기존 임상 연구와의 비교를 위해 분리 저장한다. `gender`와는 서로 다른 변수이므로 혼동하지 않는다. |
@@ -31,7 +31,7 @@
 | psychiatric_diagnosis | string / array | 🔴 RECORDED | 구체적인 정신과 진단명을 저장하는 변수이다. 다중 진단이 가능하므로, 문자열 배열이나 별도 다중 binary 변수로 관리하는 것이 더 낫다. diagnostic_group이 군 분류용 범주형이라면, 이 변수는 원본 진단 정보를 보존하는 역할을 한다. |
 | medication_status | categorical | 🔴 RECORDED | 현재 향정신성 약물 복용 상태를 기록한다(0=none, 1=antidepressant, 2=benzodiazepine, 3=multiple 등). 약물은 반응속도, 불안 수준, 학습 패턴에 영향을 줄 수 있어 공변량 후보이다. |
 | handedness | categorical | 🔴 RECORDED | 주손 여부이다(right / left / ambidextrous). 이 과제에서는 필수는 아니지만, 향후 반응속도나 신경영상/행동 연결 분석을 고려한다면 기록해둘 수 있다. |
-| task_order | categorical | 🔴 RECORDED | 과제가 어떤 순서로 제시되었는지 기록한다. 본 프로토콜의 기본 순서는 PGG → RTG Tutorial → RTG 본실험 → 설문이지만, counterbalancing을 할 경우 이 변수로 순서 효과를 통제할 수 있다. |
+| task_order | categorical | 🔴 RECORDED | 과제가 어떤 순서로 제시되었는지 기록한다. 본 프로토콜의 기본 순서는 RTG Tutorial → RTG 본실험 → 설문이지만, counterbalancing을 할 경우 이 변수로 순서 효과를 통제할 수 있다. |
 | tutorial_completed | binary | 🔴 RECORDED | RTG 튜토리얼(trustee 역할 경험 10 trials)을 끝까지 완료했는지 여부이다(0=미완료, 1=완료). 중도 이탈자나 이해 부족 사례를 제외하는 기준이 될 수 있다. |
 | comprehension_check_passed | binary | 🔴 RECORDED | 참가자가 RTG 과제 구조를 충분히 이해했는지 확인하는 이해도 점검 통과 여부이다(0=실패, 1=통과). 예를 들어 "보낸 돈은 몇 배가 되어 상대에게 전달되는가?" 같은 질문을 맞혔는지 기록한다. 분석 포함 여부를 결정하는 중요한 품질관리 변수이다. |
 | include_in_analysis_flag | binary | 🔴 RECORDED | 최종적으로 본 분석에 포함할지 여부를 저장하는 플래그이다(0=제외, 1=포함). 이해도 실패, 중도 중단, 심각한 결측, 기술적 오류 등을 반영하여 연구자가 확정한다. 원자료는 보존하되 분석 시 필터링에 사용한다. |
@@ -76,37 +76,7 @@ item-level 원점수에서 역채점 적용 후 합산/평균하여 산출한다
 
 ---
 
-# 3. Public Goods Game (PGG) variables
-
-PGG는 본 연구의 핵심 과제는 아니지만, trust game에서의 투자행동이 순수한 **interpersonal trust**인지 아니면 **일반적 협력/prosocial tendency**인지를 분리하는 보조 지표로 기능한다. PGG는 RTG보다 먼저 실시한다.
-
-## 3-1. Trial-level variables 🔴 RECORDED
-
-PGG의 각 trial(총 15 trials, 1 block)마다 기록되는 원자료이다.
-
-| Variable name | Type | Source | Description |
-|---|---|---|---|
-| pgg_trial_index | int | 🔴 RECORDED | PGG 내에서 몇 번째 trial인지 나타낸다(1~15). Trial 순서에 따른 피로, 학습, 전략 변화 등을 확인할 수 있다. |
-| pgg_group_id | string | 🔴 RECORDED | 참가자가 속한 시뮬레이션된 그룹의 식별자이다. 실제 집단이 아니라 컴퓨터가 생성한 가상 그룹이지만, 참가자에게는 실제 그룹처럼 제시된다. 어떤 그룹 알고리즘이 적용되었는지 추적하는 데 필요하다. |
-| pgg_endowment | float | 🔴 RECORDED | 해당 trial 시작 시 참가자에게 주어진 기본 자원량이다(예: 1000원 또는 10포인트). 매 trial 사용할 수 있는 총액이다. |
-| pgg_contribution | float | 🔴 RECORDED | 참가자가 공공 풀에 기여한 금액이다. 이것이 PGG의 핵심 종속변수이며, 값이 클수록 집단 협력 성향이 높다고 볼 수 있다. 참가자의 의사결정 결과로 직접 기록된다. |
-| pgg_keep_amount | float | 🔴 RECORDED | 참가자가 자신에게 남긴 금액이다. 논리적으로는 `endowment - contribution`이지만, 데이터 무결성 검증(예: 두 값의 합이 endowment와 일치하는지 확인)을 위해 별도로 저장한다. |
-| pgg_group_total_contribution | float | 🔴 RECORDED | 집단 전체가 그 trial에서 공공 풀에 넣은 총 기여액이다. 컴퓨터 시뮬레이션이 생성한 값이다. 참가자가 받는 사회적 피드백의 핵심 정보이며, 다음 trial의 기여 결정에 영향을 미칠 수 있다. |
-| pgg_feedback_amount | float | 🔴 RECORDED | 그룹 기여 결과를 반영해 참가자에게 돌아온 보상액이다. 즉, 참가자가 "협력의 결과로 실제 얼마를 벌었는지"를 나타낸다. 보통 `pgg_group_total_contribution × multiplier / group_size`로 결정되지만, 이 값 자체를 기록해야 재현성이 보장된다. |
-| pgg_response_time_ms | int | 🔴 RECORDED | 참가자가 얼마를 기여할지 결정하는 데 걸린 시간이다(밀리초 단위). 갈등, 망설임, 숙고 수준의 간접 지표가 될 수 있다. |
-
-## 3-2. Participant-level derived variables 🔵 DERIVED
-
-PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
-
-| Variable name | Type | Source | Description |
-|---|---|---|---|
-| pgg_mean_contribution | float | 🔵 DERIVED | 참가자가 PGG 전체 15 trial에서 평균적으로 얼마나 기여했는지를 나타낸다. 산출: 전 trial의 `pgg_contribution`의 평균. 일반적 협력 성향의 요약 지표이며, RTG 분석에서 trust 투자행동의 공변량으로 사용하여 "순수한 interpersonal trust" 효과를 분리하는 데 활용한다. |
-| pgg_contribution_variability | float | 🔵 DERIVED | 전 trial에서 기여액의 표준편차이다. 산출: 전 trial의 `pgg_contribution`의 SD. 어떤 참가자는 일관되게 기여하고, 어떤 참가자는 trial마다 크게 흔들리는데, 이 차이를 반영한다. |
-
----
-
-# 4. Repeated Trust Game (RTG) — core trial-level variables 🔴 RECORDED
+# 3. Repeated Trust Game (RTG) — core trial-level variables 🔴 RECORDED
 
 이 부분이 본 연구의 핵심이다. RTG 본실험의 모든 trial(총 45 trials = 3 partners × 15 trials)에서 매번 기록되어야 하며, 거의 모든 분석은 여기서 출발한다. 실험 코드에서 반드시 구현해야 하는 변수들이다.
 
@@ -130,7 +100,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 
 ---
 
-# 5. Post-block perception variables 🔴 RECORDED
+# 4. Post-block perception variables 🔴 RECORDED
 
 이 변수들은 각 partner block(15 trials) 종료 직후 수집한다. 총 3회(partner당 1회) 기록된다. 참가자가 상대의 특성을 얼마나 정확히 파악했는지, 그리고 그 상대에 대해 얼마나 접근/회피적인 태도를 가지는지 측정한다.
 
@@ -143,7 +113,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 
 ---
 
-# 6. Partner algorithm log variables 🔴 RECORDED
+# 5. Partner algorithm log variables 🔴 RECORDED
 
 이 변수들은 참가자 심리변수가 아니라, **프로그램 내부에서 partner behavior가 어떻게 생성되었는지**를 남기는 재현성/디버깅용 로그이다. 매 trial 기록한다. 분석에 직접 쓰이지 않더라도, 나중에 특정 참가자의 게임 경험을 완전히 재구성하는 데 필수적이다.
 
@@ -159,11 +129,11 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 
 ---
 
-# 7. RTG trial-level derived variables 🔵 DERIVED
+# 6. RTG trial-level derived variables 🔵 DERIVED
 
 아래 변수들은 4절(core trial-level RECORDED 변수)의 원자료로부터 **분석 단계에서 사후 계산**한다. 실험 코드에서 실시간 저장할 필요는 없지만, 분석 스크립트에서 재현 가능해야 한다.
 
-## 7-1. Lag / 이전 trial 변수
+## 6-1. Lag / 이전 trial 변수
 
 이 변수들은 참가자의 현재 선택이 **직전 trial의 경험에 어떻게 영향을 받는지** 보기 위한 것이다. 동일 partner block 내에서만 계산하며, 각 block의 첫 trial(trial_within_partner=1)에서는 NA이다.
 
@@ -173,7 +143,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | previous_partner_return_amount | float | 🔵 DERIVED | 직전 trial에서 상대가 돌려준 금액이다. 산출: 동일 partner block 내 `partner_return_amount(t-1)`. 참가자가 이 피드백을 바탕으로 다음 trial의 신뢰 수준을 조정하는지 보는 핵심 predictor이다. |
 | previous_partner_return_ratio | float | 🔵 DERIVED | 직전 trial에서 상대의 반환비율이다. 산출: 동일 partner block 내 `partner_return_ratio(t-1)`. 절대 반환액보다 더 정규화된 피드백 정보이며, mixed-effects model과 RL 모형에서 핵심 predictor로 사용된다. |
 
-## 7-2. Updating / 변화 변수
+## 6-2. Updating / 변화 변수
 
 이 변수들은 사회불안이 단순히 trust 수준을 낮추는지(H1), 아니면 **피드백을 반영하는 방식 자체를 바꾸는지**(H2)를 분석하는 데 핵심적이다.
 
@@ -184,7 +154,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | trust_update_after_feedback | float | 🔵 DERIVED | 특정 trial의 피드백을 받은 뒤 **다음 trial에서** 투자액이 얼마나 변했는지를 나타낸다. 산출: `amount_sent(t+1) - amount_sent(t)`. delta_sent_from_previous_trial과 동일한 값이지만 시점을 "피드백을 받은 trial" 기준으로 정렬한 것이다. 예를 들어 return이 낮았을 때 다음 trial에 많이 줄이면 negative feedback에 민감하다고 볼 수 있다. |
 | gain_or_loss_relative_to_expectation | float | 🔵 DERIVED | 참가자가 "기대했던 수준" 대비 실제 결과가 얼마나 좋았거나 나빴는지를 나타내는 prediction error 유사 지표이다. 산출: `partner_return_ratio(t) - rolling_mean_return_ratio(최근 3 trial)`. 명시적 기대 평정을 수집하지 않으므로 최근 rolling mean을 기준 기대치로 정의한다. Computational modeling의 예측 오차와 대응되는 행동 수준 지표이다. |
 
-## 7-3. 사건 분류 변수
+## 6-3. 사건 분류 변수
 
 이 변수들은 특정 trial을 "배신", "호혜", "중립" 사건으로 범주화한다. **사전 정의 기준(preregistration 대상)**이며, 데이터를 보기 전에 확정한다.
 
@@ -194,7 +164,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | reciprocity_event_flag | binary | 🔵 DERIVED | 해당 trial의 반환이 충분히 높아 "호혜적/신뢰보상적 사건"인지 여부이다(0=아님, 1=호혜). 산출: `partner_return_ratio ≥ 0.50`이면 1. 상대가 받은 금액의 절반 이상을 돌려준 경우로, 참가자 입장에서 신뢰가 보상받은 trial이다. |
 | neutral_event_flag | binary | 🔵 DERIVED | 배신도 아니고 강한 호혜도 아닌 중간 범주의 피드백인지 여부이다(0=아님, 1=중립). 산출: 위 두 조건에 해당하지 않는 경우(0.25 ≤ partner_return_ratio < 0.50). |
 
-## 7-4. Recovery / 배신 적응 변수
+## 6-4. Recovery / 배신 적응 변수
 
 이 변수들은 참가자가 배신 사건 이후 얼마나 오래 위축되는지, 얼마나 잘 회복하는지를 측정한다. H1(withdrawal)과 H2(unstable building)의 핵심 행동지표이다.
 
@@ -205,7 +175,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | sent_change_after_betrayal_3trial | float | 🔵 DERIVED | 배신 사건 후 3 trial 이내에 투자액이 어떻게 변화했는지이다. 산출: `mean(amount_sent(t+1, t+2, t+3)) - amount_sent(t)`. 1 trial 변화보다 더 안정적인 단기 회복/지속 위축 지표이다. 남은 trial이 3개 미만이면 가용한 trial로 계산한다. |
 | recovered_to_pre_betrayal_level_flag | binary | 🔵 DERIVED | 배신 이후 일정 기간 내에 투자 수준이 배신 이전 수준으로 회복되었는지 여부이다(0=미회복, 1=회복). 산출: 배신 전 3 trial 평균을 기준으로, 배신 후 5 trial 내에 그 수준의 80% 이상으로 복귀했으면 1. 회복 탄력성을 단순한 이진 지표로 표현한다. |
 
-## 7-5. Instability / 변동성 변수
+## 6-5. Instability / 변동성 변수
 
 이 변수들은 참가자가 trust를 얼마나 안정적으로 형성하는지, 아니면 trial마다 심하게 흔들리는지를 평가한다. H2(unstable trust building)의 핵심 지표이다.
 
@@ -219,7 +189,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 
 ---
 
-# 8. Data quality flags 🔵 DERIVED
+# 7. Data quality flags 🔵 DERIVED
 
 이 변수들은 분석 포함/제외를 결정하기 위한 품질관리용 플래그이다. 실험 코드에서 일부 기록하고(timeout, missing), 나머지는 데이터 정리 단계에서 부여한다.
 
@@ -233,11 +203,11 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 
 ---
 
-# 9. Participant-level derived summary variables 🔵 DERIVED
+# 8. Participant-level derived summary variables 🔵 DERIVED
 
 이 변수들은 trial-level raw data(4절)에서 **사후 계산되는 요약 지표**이다. 논문에서 2차 분석(participant-level regression)과 매개 모형(SEM)에 직접 투입된다. 모든 산출은 main_task_trial_flag=1인 trial만을 대상으로 한다.
 
-## 9-1. Trust level 요약
+## 8-1. Trust level 요약
 
 | Variable name | Type | Source | 산출 방법 | 가설 대응 | Description |
 |---|---|---|---|---|---|
@@ -248,7 +218,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | first_trial_sent_overall | float | 🔵 DERIVED | `amount_sent` where `rtg_trial_index = 1` | H1 | 전체 RTG의 첫 trial 투자액이다. initial_trust_overall과 동일한 값이지만, participant-level 요약변수로서의 역할을 명시적으로 부여한다. 학습 이전의 baseline interpersonal trust tendency로 해석한다. |
 | first_trial_sent_each_partner | float (×3) | 🔵 DERIVED | 각 partner block의 `amount_sent` where `trial_within_partner = 1` | H1 | 각 partner를 처음 만났을 때의 첫 투자액이다. 새로운 상대를 대할 때의 초기 기대와 경계 수준을 보여준다. Partner별로 3개 값이 산출되므로 평균을 쓰거나 partner별로 분리 분석한다. |
 
-## 9-2. Updating 요약
+## 8-2. Updating 요약
 
 | Variable name | Type | Source | 산출 방법 | 가설 대응 | Description |
 |---|---|---|---|---|---|
@@ -260,7 +230,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | learning_index_low_partner | float | 🔵 DERIVED | low partner 후반 5 trial 평균 − 초반 5 trial 평균의 `amount_sent` | H3 | Low partner에 대해 trial이 지날수록 투자를 얼마나 적절히 줄였는지 나타내는 학습 지표이다. 음수면 비호혜적 상대에게 점차 trust를 낮춘(적절한 학습) 것이다. 사회불안이 높은 H3군에서 이 값이 0에 가까우면 학습 실패를 시사한다. |
 | discrimination_index | float | 🔵 DERIVED | `mean_sent_high_partner - mean_sent_low_partner` | H1, H2, H3 | 좋은 상대와 나쁜 상대를 행동적으로 얼마나 잘 구분했는지를 보여준다. 값이 클수록 구분이 잘 된 것이다. 사회불안 효과가 "전반적 저투자"(H1)라면 두 값이 모두 낮아 discrimination_index는 유지될 수 있고, "학습 실패"(H2/H3)라면 discrimination_index 자체가 작아진다. |
 
-## 9-3. Instability 요약
+## 8-3. Instability 요약
 
 | Variable name | Type | Source | 산출 방법 | 가설 대응 | Description |
 |---|---|---|---|---|---|
@@ -268,7 +238,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | mean_absolute_trial_to_trial_change | float | 🔵 DERIVED | 전체 trial의 `absolute_change_in_sent` 평균 | H2 | 인접한 trial 사이에서 투자액이 평균적으로 얼마나 크게 바뀌는지를 나타낸다. 방향과 무관한 순수 instability 지표이다. sd_sent_all_trials와 달리, 전반적 수준의 차이가 아니라 trial-to-trial 점프의 크기를 직접 반영한다. |
 | instability_index_volatile_partner | float | 🔵 DERIVED | partner_type=3인 trial의 `absolute_change_in_sent` 평균 또는 `amount_sent` 표준편차 | H2 | Volatile partner 조건에서의 투자 변동성을 따로 요약한 값이다. 불확실한 상대에 대한 행동적 흔들림을 평가하는 핵심 H2 지표이다. 사회불안이 높은 참가자에서 이 값이 특별히 크면, 예측 불가능한 상대에게 과대반응하는 패턴을 시사한다. |
 
-## 9-4. Betrayal / recovery 요약
+## 8-4. Betrayal / recovery 요약
 
 | Variable name | Type | Source | 산출 방법 | 가설 대응 | Description |
 |---|---|---|---|---|---|
@@ -277,7 +247,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 | number_of_trials_to_recover | int | 🔵 DERIVED | 배신 전 수준의 80%로 돌아오기까지 걸린 trial 수의 평균 | H1 | 배신 전 수준으로 돌아오기까지 걸린 trial 수이다. 값이 클수록 배신의 영향이 오래 지속된 것이다. 회복하지 못한 경우 NA 또는 최대값(15)으로 처리한다. |
 | persistent_distrust_after_betrayal | float / binary | 🔵 DERIVED | 배신 후 나머지 trial에서의 평균 투자가 배신 전 대비 일정 비율(예: 50%) 이하로 유지되었는지 | H1 | 배신 이후에도 장기간 낮은 투자 상태가 지속되는지를 나타낸다. 연속형(비율)으로도, 일정 기준 이상이면 1로 이진화할 수도 있다. H1(withdrawal)의 극단적 형태를 포착하는 지표이다. |
 
-## 9-5. Over-trust / self-protection failure 요약
+## 8-5. Over-trust / self-protection failure 요약
 
 | Variable name | Type | Source | 산출 방법 | 가설 대응 | Description |
 |---|---|---|---|---|---|
@@ -286,7 +256,7 @@ PGG trial-level 원자료에서 분석 단계에서 사후 계산한다.
 
 ---
 
-# 10. Computational modeling parameters 🔵 DERIVED
+# 9. Computational modeling parameters 🔵 DERIVED
 
 Trial-by-trial Rescorla-Wagner 또는 hierarchical Bayesian 모형을 적용하여 추정하는 개인별 잠재 파라미터이다. 이 변수들은 원자료에서 직접 계산하는 것이 아니라, **모형 적합(model fitting)을 통해 추정**된다. 2nd-stage regression에서 사회불안 점수 및 공변량과 연결한다.
 

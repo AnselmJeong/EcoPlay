@@ -1,5 +1,5 @@
 import GameCard from '@/components/GameCard';
-import { Brain, Handshake, Users } from 'lucide-react';
+import { Brain, Handshake } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -7,18 +7,11 @@ export default function HomePage() {
       <div className="text-center mb-12">
         <h2 className="text-5xl font-headline font-bold text-primary mb-4 animate-fadeIn">Welcome to EcoPlay!</h2>
         <p className="text-xl font-body text-foreground/80 max-w-2xl mx-auto animate-fadeInUp">
-          실험 순서에 맞춰 협동 과제와 반복 신뢰 과제를 진행하세요.
-          먼저 공공재 게임을 끝내고, 신뢰 게임 튜토리얼과 본실험으로 이어가면 됩니다.
+          신뢰 게임 튜토리얼을 완료한 뒤 반복 신뢰 게임 본실험을 진행하세요.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-        <GameCard
-          title="Public Goods Game"
-          description="15번의 라운드 동안 공공 풀에 기여하면서 개인 보상과 집단 이익의 균형을 맞춥니다."
-          link="/public-goods"
-          Icon={Users}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center">
         <GameCard
           title="RTG Tutorial"
           description="본실험 전에 trustee 역할을 짧게 경험하고 이해도 점검을 완료합니다."

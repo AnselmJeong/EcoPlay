@@ -33,7 +33,6 @@ export interface SessionState {
   current_partner_label?: string | null;
   endowment?: number | null;
   multiplier?: number | null;
-  group_size?: number | null;
   awaiting_post_block?: boolean | null;
   tutorial_completed?: boolean | null;
   comprehension_check_passed?: boolean | null;
@@ -68,22 +67,6 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
-}
-
-export interface PGGSubmitTrialResponse {
-  session: SessionState;
-  trial: {
-    pgg_trial_index: number;
-    pgg_contribution: number;
-    pgg_keep_amount: number;
-    pgg_feedback_amount: number;
-    pgg_group_total_contribution: number;
-    pgg_simulated_contributions: number[];
-    participant_total_payoff_this_trial: number;
-    cumulative_payoff: number;
-  };
-  share_per_player: number;
-  completed: boolean;
 }
 
 export interface TutorialSubmitResponse {
@@ -148,17 +131,14 @@ export interface RTGPostBlockResponse {
 export interface AllGameReportResponse {
   overall_summary: {
     games_played: {
-      public_goods: number;
       rtg_tutorial: number;
       trust_game: number;
     };
     expected_rounds_by_game: {
-      public_goods: number;
       rtg_tutorial: number;
       trust_game: number;
     };
     sessions_completed: {
-      public_goods: boolean;
       rtg_tutorial: boolean;
       trust_game: boolean;
     };
@@ -259,24 +239,6 @@ async function apiCall<T = any>(endpoint: string, options: RequestInit = {}): Pr
   return response.json() as Promise<T>;
 }
 
-export const publicGoodsAPI = {
-  startSession: async (options: StartSessionOptions = {}) =>
-    apiCall<SessionStartResponse>('/game/pgg/start-session', {
-      method: 'POST',
-      body: JSON.stringify({ replace_completed: options.replaceCompleted ?? false }),
-    }),
-  getSession: async (sessionId: string) => apiCall<SessionStartResponse>(`/game/pgg/session/${sessionId}`),
-  submitTrial: async (data: {
-    session_id: string;
-    contribution: number;
-    response_time_ms: number;
-  }) =>
-    apiCall<PGGSubmitTrialResponse>('/game/pgg/submit-trial', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-};
-
 export const rtgTutorialAPI = {
   startSession: async (options: StartSessionOptions = {}) =>
     apiCall<SessionStartResponse>('/game/rtg/tutorial/start', {
@@ -362,7 +324,6 @@ export const messageAPI = {
 export const reportAPI = {
   getGameReport: async () => apiCall('/report/games'),
   getAllGamesReport: async () => apiCall<AllGameReportResponse>('/report/all'),
-  getPublicGoodsReport: async () => apiCall('/report/public-goods'),
   getRTGTutorialReport: async () => apiCall('/report/rtg-tutorial'),
   getTrustGameReport: async () => apiCall('/report/trust-game'),
 };

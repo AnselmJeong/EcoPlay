@@ -24,7 +24,7 @@ export default function Header() {
       href: "/games",
       label: "게임 화면",
       icon: Gamepad2,
-      active: pathname?.startsWith("/games") || pathname?.startsWith("/public-goods") || pathname?.startsWith("/trust-game"),
+      active: pathname?.startsWith("/games") || pathname?.startsWith("/trust-game"),
     },
     {
       href: "/questionnaire",

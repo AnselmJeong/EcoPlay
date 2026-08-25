@@ -6,7 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'EcoPlay - Economic Games',
-  description: 'Play engaging economic games like Public Goods and Trust Game.',
+  description: 'A research platform for repeated trust-game experiments.',
 };
 
 export default function RootLayout({

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Users, Clock, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Users, CheckCircle2 } from 'lucide-react';
 import { reportAPI } from '@/lib/api';
 
 interface GameProgressProps {
@@ -20,7 +20,6 @@ interface ProgressSection {
 interface ProgressData {
   overall: ProgressSection;
   trustGame: ProgressSection;
-  publicGoods: ProgressSection;
 }
 
 export default function GameProgress({ className = "" }: GameProgressProps) {
@@ -49,17 +48,6 @@ export default function GameProgress({ className = "" }: GameProgressProps) {
             total: trustTotal,
             percentage: trustTotal
               ? Math.round((trustCompleted / trustTotal) * 100)
-              : 0,
-          },
-          publicGoods: {
-            completed: summary.games_played.public_goods,
-            total: summary.expected_rounds_by_game.public_goods,
-            percentage: summary.expected_rounds_by_game.public_goods
-              ? Math.round(
-                  (summary.games_played.public_goods /
-                    summary.expected_rounds_by_game.public_goods) *
-                    100
-                )
               : 0,
           },
         });
@@ -146,23 +134,6 @@ export default function GameProgress({ className = "" }: GameProgressProps) {
           <Progress value={progressData.trustGame.percentage} className="h-2" />
           <p className="text-xs text-gray-500">
             {progressData.trustGame.completed} / {progressData.trustGame.total} 라운드 완료
-          </p>
-        </div>
-
-        {/* 공공재 게임 진행률 */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              공공재 게임
-            </span>
-            <Badge variant={progressData.publicGoods.percentage === 100 ? "default" : "outline"}>
-              {progressData.publicGoods.percentage}%
-            </Badge>
-          </div>
-          <Progress value={progressData.publicGoods.percentage} className="h-2" />
-          <p className="text-xs text-gray-500">
-            {progressData.publicGoods.completed} / {progressData.publicGoods.total} 라운드 완료
           </p>
         </div>
 

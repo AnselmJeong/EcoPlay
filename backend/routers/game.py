@@ -3,8 +3,6 @@ from fastapi import APIRouter, Depends
 from core.auth import extract_medical_record_number, get_current_user_optional
 from core.firebase import get_firestore_client
 from schemas.game import (
-    PublicGoodsSubmitTrialRequest,
-    PublicGoodsSubmitTrialResponse,
     RTGPostBlockRequest,
     RTGPostBlockResponse,
     RTGSubmitTrialRequest,
@@ -17,52 +15,11 @@ from schemas.game import (
     SessionStartResponse,
 )
 from services.game_sessions import (
-    PGGSessionService,
     RTGSessionService,
     RTGTutorialService,
 )
 
 router = APIRouter(prefix="/game", tags=["game"])
-
-
-@router.post("/pgg/start-session", response_model=SessionStartResponse)
-async def start_pgg_session(
-    request: SessionStartRequest | None = None,
-    current_user=Depends(get_current_user_optional),
-):
-    db = get_firestore_client()
-    service = PGGSessionService(db)
-    user_id = extract_medical_record_number(current_user)
-    return {
-        "session": service.start_session(
-            user_id,
-            replace_completed=request.replace_completed if request else False,
-        )
-    }
-
-
-@router.get("/pgg/session/{session_id}", response_model=SessionStartResponse)
-async def get_pgg_session(session_id: str, current_user=Depends(get_current_user_optional)):
-    db = get_firestore_client()
-    service = PGGSessionService(db)
-    user_id = extract_medical_record_number(current_user)
-    return {"session": service.get_session(user_id, session_id)}
-
-
-@router.post("/pgg/submit-trial", response_model=PublicGoodsSubmitTrialResponse)
-async def submit_pgg_trial(
-    request: PublicGoodsSubmitTrialRequest,
-    current_user=Depends(get_current_user_optional),
-):
-    db = get_firestore_client()
-    service = PGGSessionService(db)
-    user_id = extract_medical_record_number(current_user)
-    return service.submit_trial(
-        user_id=user_id,
-        session_id=request.session_id,
-        contribution=request.contribution,
-        response_time_ms=request.response_time_ms,
-    )
 
 
 @router.post("/rtg/tutorial/start", response_model=SessionStartResponse)

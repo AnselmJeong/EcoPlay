@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-EcoPlay is a research platform for economic psychology experiments using game theory (Public Goods Game and Trust Game) to study trust and cooperation. The UI is primarily in Korean.
+EcoPlay is a research platform for economic psychology experiments using the Repeated Trust Game to study trust and cooperation. The UI is primarily in Korean.
 
 ## Tech Stack
 
@@ -37,8 +37,7 @@ Users authenticate with medical record number (8 digits) + birth date (YYYYMMDD)
 
 ### Game Flow
 1. Landing page → Consent page → Games hub
-2. **Public Goods Game:** User donates to common pool, 4 AI players contribute randomly, returns distributed proportionally
-3. **Trust Game:**
+2. **Trust Game:**
    - Receiver (trustee): Receives investment, decides return amount
    - Trustor: Invests amount (3x multiplier), trustee decides return
 
@@ -51,7 +50,7 @@ REST API via FastAPI with Firebase ID token verification. Key endpoints:
 - `/api/report/*` - Game reports
 
 ### Data Storage
-Firebase Firestore collections: `basic_info`, `public_goods_game`, `trust_game`, `game_matches`, `questionnaire`
+Firebase Firestore collections: `basic_info`, `rtg_tutorial_sessions`, `rtg_tutorial_trials`, `rtg_sessions`, `rtg_trials`, `rtg_post_blocks`, `game_matches`, `questionnaire`
 
 ### CORS Configuration
 Backend allows `localhost:3000` (production) and `localhost:9002` (development).

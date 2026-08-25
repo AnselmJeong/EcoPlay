@@ -31,11 +31,10 @@ Repeated trust game에서 측정한 trust의 동태적 특성(초기 신뢰, 학
 
 ## 3. 실험 절차 (순서)
 
-실험 순서는 설문을 과제 뒤에 배치하여 자기개념 기반의 행동 조정을 최소화한다. PGG는 RTG와 독립적인 과제이므로 먼저 실시하고, RTG tutorial은 RTG 규칙 학습용이므로 RTG 본실험 직전에 배치한다.
+실험 순서는 설문을 과제 뒤에 배치하여 자기개념 기반의 행동 조정을 최소화한다. RTG tutorial은 RTG 규칙 학습용이므로 RTG 본실험 직전에 배치한다.
 
 ```
 짧은 안내 및 동의 → 인구통계 수집
-→ Public Goods Game
 → RTG Tutorial (trustee 역할 경험) → 이해도 점검
 → Repeated Trust Game 본실험
 → 설문 배터리
@@ -45,32 +44,24 @@ Repeated trust game에서 측정한 trust의 동태적 특성(초기 신뢰, 학
 |---|---|---|
 | 1. 안내 및 동의 | 연구 목적 설명, 서면 동의 | deception 사용 시 IRB 범위 내 처리 |
 | 2. 인구통계 | participant_id, age, sex_at_birth, gender, education, diagnosis, medication 등 | 1회 기록 |
-| 3. Public Goods Game | 일반적 협력 성향 측정 | 15 trials, 1 block; 통제변수용 |
-| 4. RTG Tutorial | Trust game 규칙 학습 (참가자가 trustee 역할 경험) | 10 trials, 1 block; 분석 제외 |
-| 5. 이해도 점검 | 배수, 반환 구조, 반복 상호작용 여부 확인 | 통과 필수 |
-| 6. Repeated Trust Game 본실험 | 3개 partner × 15 trials = 45 trials | 핵심 과제 |
-| 7. 설문 배터리 | 아래 5절 참조 | 과제 후 실시 |
+| 3. RTG Tutorial | Trust game 규칙 학습 (참가자가 trustee 역할 경험) | 10 trials, 1 block; 분석 제외 |
+| 4. 이해도 점검 | 배수, 반환 구조, 반복 상호작용 여부 확인 | 통과 필수 |
+| 5. Repeated Trust Game 본실험 | 3개 partner × 15 trials = 45 trials | 핵심 과제 |
+| 6. 설문 배터리 | 아래 5절 참조 | 과제 후 실시 |
 
 ---
 
 ## 4. 과제 설계
 
-### 4.1 Public Goods Game (PGG)
+### 4.1 Repeated Trust Game (RTG)
 
-- 목적: trust game 투자행동이 순수한 interpersonal trust인지 일반적 협력 성향인지 분리하기 위한 보조 과제
-- 구조: 15 trials, 1 block
-- 집단: 시뮬레이션된 그룹(computerized)
-- 분석 역할: 통제변수(pgg_mean_contribution)
-
-### 4.2 Repeated Trust Game (RTG)
-
-#### 4.2.1 역할 및 구조
+#### 4.1.1 역할 및 구조
 
 - 참가자는 항상 **trustor**
 - 상대는 computerized agent이지만, 참가자에게는 "각기 다른 특성을 가진 상대"로 제시
 - multiplier: ×3 (고정)
 
-#### 4.2.2 Partner 유형 (3종)
+#### 4.1.2 Partner 유형 (3종)
 
 | Partner type | 코드 | 평균 반환비율 | 변동성 구조 |
 |---|---|---|---|
@@ -80,14 +71,14 @@ Repeated trust game에서 측정한 trust의 동태적 특성(초기 신뢰, 학
 
 세 partner는 평균뿐 아니라 변동성 구조도 달라야 한다. Volatile partner는 단순히 평균이 중간인 것이 아니라 trial 간 반환비율이 큰 폭으로 변동하는 구조여야 "불안정한 trust building" 가설을 검증할 수 있다.
 
-#### 4.2.3 Block 구조
+#### 4.1.3 Block 구조
 
 - 한 block = 한 partner와 15 trials 연속 진행
 - 총 3 blocks (partner별 1 block)
 - Block 제시 순서: 참가자별 무작위화
 - 각 block 종료 직후: Post-block perception 질문 실시
 
-#### 4.2.4 Post-block Perception 질문
+#### 4.1.4 Post-block Perception 질문
 
 각 block 종료 직후 아래 세 문항을 수집한다.
 
@@ -158,22 +149,7 @@ Repeated trust game에서 측정한 trust의 동태적 특성(초기 신뢰, 학
 
 **Scale-level:** ksias_total, ksps_total, kbfne_total, phq9_total, gad7_total, ucla_total, ecrr_anxiety (애착불안 하위척도), ecrr_avoidance (애착회피 하위척도), pbi_care (돌봄 하위척도), pbi_overprotection (과보호 하위척도)
 
-### 6.3 PGG Trial-level 변수 (실시간 저장)
-
-| Variable | Type | 설명 |
-|---|---|---|
-| pgg_trial_index | int | PGG 내 trial 번호 |
-| pgg_group_id | string | 시뮬레이션된 그룹 ID |
-| pgg_endowment | float | 초기 자원량 |
-| pgg_contribution | float | 공공 풀 기여액 |
-| pgg_keep_amount | float | 보유액 |
-| pgg_group_total_contribution | float | 집단 총 기여액 |
-| pgg_feedback_amount | float | 참가자에게 돌아온 보상액 |
-| pgg_response_time_ms | int | 반응시간 (ms) |
-
-**PGG 사후 계산 파생변수:** pgg_mean_contribution, pgg_contribution_variability
-
-### 6.4 RTG Trial-level 변수 — 실시간 저장
+### 6.3 RTG Trial-level 변수 — 실시간 저장
 
 아래 변수들은 매 trial 실험 코드에서 직접 기록한다.
 
@@ -216,7 +192,7 @@ Repeated trust game에서 측정한 trust의 동태적 특성(초기 신뢰, 학
 | noise_term | float | trial별 오차 성분 |
 | contingency_schedule_id | string | 반환 스케줄 ID |
 
-### 6.5 RTG Trial-level 변수 — 사후 계산
+### 6.4 RTG Trial-level 변수 — 사후 계산
 
 아래 변수들은 원자료에서 분석 단계에서 파생한다. 실험 코드에서 실시간 저장할 필요는 없지만, 분석 스크립트에서 재현 가능해야 한다.
 
@@ -243,7 +219,7 @@ rolling_mean_sent_last3, rolling_sd_sent_last3, absolute_change_in_sent, initial
 **데이터 품질 플래그:**
 tutorial_trial_flag, main_task_trial_flag, missing_response_flag, timeout_flag, exclusion_reason
 
-### 6.6 Participant-level 요약변수 (사후 계산, 분석용)
+### 6.5 Participant-level 요약변수 (사후 계산, 분석용)
 
 이 변수들은 trial-level 원자료에서 산출하며, 논문 1차 분석에 직접 투입된다.
 

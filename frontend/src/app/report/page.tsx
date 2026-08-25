@@ -17,14 +17,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { reportAPI } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
-type PGGRound = {
-  pgg_trial_index: number;
-  pgg_contribution: number;
-  pgg_feedback_amount: number;
-  participant_total_payoff_this_trial: number;
-  cumulative_payoff: number;
-};
-
 type TutorialRound = {
   trial_index: number;
   amount_received: number;
@@ -80,7 +72,6 @@ export default function ReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<any>(null);
-  const [pggReport, setPggReport] = useState<any>(null);
   const [tutorialReport, setTutorialReport] = useState<any>(null);
   const [rtgReport, setRtgReport] = useState<any>(null);
   const { user, loading: authLoading } = useAuth();
@@ -93,15 +84,13 @@ export default function ReportPage() {
         setLoading(true);
         setError(null);
 
-        const [overviewResult, pggResult, tutorialResult, rtgResult] = await Promise.all([
+        const [overviewResult, tutorialResult, rtgResult] = await Promise.all([
           reportAPI.getAllGamesReport(),
-          reportAPI.getPublicGoodsReport(),
           reportAPI.getRTGTutorialReport(),
           reportAPI.getTrustGameReport(),
         ]);
 
         setOverview(overviewResult);
-        setPggReport(pggResult);
         setTutorialReport(tutorialResult);
         setRtgReport(rtgResult);
       } catch (loadError) {
@@ -138,29 +127,8 @@ export default function ReportPage() {
     );
   }
 
-  const pggRounds = (pggReport?.rounds ?? []) as PGGRound[];
   const tutorialRounds = (tutorialReport?.rounds ?? []) as TutorialRound[];
   const rtgRounds = (rtgReport?.rounds ?? []) as RTGRound[];
-
-  const pggStats: StatsCard[] = pggReport?.summary
-    ? [
-        {
-          title: 'Total Contribution',
-          value: pggReport.summary.total_contribution.toFixed(2),
-          hint: `${pggReport.summary.total_rounds} / ${pggReport.summary.expected_rounds} trials`,
-        },
-        {
-          title: 'Total Feedback',
-          value: pggReport.summary.total_feedback.toFixed(2),
-          hint: '받아온 공공 풀 보상 합계',
-        },
-        {
-          title: 'Cumulative Payoff',
-          value: pggReport.summary.cumulative_payoff.toFixed(2),
-          hint: '최종 누적 payoff',
-        },
-      ]
-    : [];
 
   const tutorialStats: StatsCard[] = tutorialReport?.summary
     ? [
@@ -209,7 +177,7 @@ export default function ReportPage() {
       <div className="space-y-2">
         <h1 className="text-4xl font-bold text-primary">Experiment Report</h1>
         <p className="max-w-2xl text-foreground/70">
-          가장 최근에 완료한 PGG, RTG tutorial, RTG main session을 기준으로 실험 진행 현황과
+          가장 최근에 완료한 RTG tutorial과 RTG main session을 기준으로 실험 진행 현황과
           행동 궤적을 보여줍니다.
         </p>
       </div>
@@ -221,11 +189,6 @@ export default function ReportPage() {
               title: 'Overall Progress',
               value: `${overall.overall_percentage}%`,
               hint: `${overall.completed_rounds} / ${overall.expected_rounds} total trials`,
-            },
-            {
-              title: 'PGG Session',
-              value: overall.sessions_completed.public_goods ? 'Done' : 'Missing',
-              hint: '공공재 게임 완료 여부',
             },
             {
               title: 'Tutorial Session',
@@ -241,41 +204,11 @@ export default function ReportPage() {
         />
       )}
 
-      <Tabs defaultValue="pgg" className="space-y-6">
+      <Tabs defaultValue="tutorial" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="pgg">PGG</TabsTrigger>
           <TabsTrigger value="tutorial">RTG Tutorial</TabsTrigger>
           <TabsTrigger value="rtg">RTG Main</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="pgg" className="space-y-6">
-          {pggRounds.length === 0 ? (
-            <EmptyState message="완료된 PGG 세션이 아직 없습니다." />
-          ) : (
-            <>
-              <StatsGrid items={pggStats} />
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle>PGG Trial Trajectory</CardTitle>
-                </CardHeader>
-                <CardContent className="h-[360px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={pggRounds}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="pgg_trial_index" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="pgg_contribution" stroke="#2563eb" name="Contribution" strokeWidth={2} />
-                      <Line type="monotone" dataKey="pgg_feedback_amount" stroke="#16a34a" name="Feedback" strokeWidth={2} />
-                      <Line type="monotone" dataKey="cumulative_payoff" stroke="#f59e0b" name="Cumulative payoff" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </>
-          )}
-        </TabsContent>
 
         <TabsContent value="tutorial" className="space-y-6">
           {tutorialRounds.length === 0 ? (

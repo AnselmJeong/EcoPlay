@@ -1,18 +1,13 @@
 import unittest
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException
-
 from services.game_sessions import (
     PARTICIPANT_RESTARTED,
-    PGG_SESSIONS,
-    PGG_TRIALS,
     RTG_POST_BLOCKS,
     RTG_SESSIONS,
     RTG_TRIALS,
     RTG_TUTORIAL_SESSIONS,
     RTG_TUTORIAL_TRIALS,
-    PGGSessionService,
     latest_completed_session,
     prepare_for_new_session,
 )
@@ -87,47 +82,6 @@ class FakeFirestore:
 
 
 class SessionReplacementTest(unittest.TestCase):
-    def test_completed_session_requires_confirmation_then_is_invalidated(self):
-        now = datetime.utcnow()
-        completed = {
-            "session_id": "pgg-completed",
-            "user_id": "participant-1",
-            "game_type": "pgg",
-            "config_version": "test",
-            "completed": True,
-            "completed_trials_count": 15,
-            "cumulative_payoff": 10.0,
-            "created_at": now,
-            "updated_at": now,
-        }
-        db = FakeFirestore(
-            {
-                PGG_SESSIONS: {completed["session_id"]: completed},
-                PGG_TRIALS: {
-                    "trial-1": {
-                        "session_id": completed["session_id"],
-                        "pgg_trial_index": 1,
-                    }
-                },
-            }
-        )
-        service = PGGSessionService(db)
-
-        with self.assertRaises(HTTPException) as context:
-            service.start_session("participant-1")
-
-        self.assertEqual(context.exception.status_code, 409)
-        self.assertEqual(context.exception.detail["code"], "completed_session_exists")
-        self.assertNotIn("invalidated_at", completed)
-
-        new_session = service.start_session("participant-1", replace_completed=True)
-
-        self.assertNotEqual(new_session["session_id"], completed["session_id"])
-        self.assertEqual(completed["status"], "invalidated")
-        self.assertEqual(completed["exclusion_reason"], PARTICIPANT_RESTARTED)
-        self.assertIn("invalidated_at", completed)
-        self.assertIn("trial-1", db.collection(PGG_TRIALS).documents)
-
     def test_unfinished_session_data_is_purged_and_tombstone_is_retained(self):
         unfinished = {
             "session_id": "rtg-unfinished",
@@ -171,7 +125,7 @@ class SessionReplacementTest(unittest.TestCase):
         now = datetime.utcnow()
         db = FakeFirestore(
             {
-                PGG_SESSIONS: {
+                RTG_SESSIONS: {
                     "valid": {
                         "session_id": "valid",
                         "user_id": "participant-1",
@@ -191,7 +145,7 @@ class SessionReplacementTest(unittest.TestCase):
             }
         )
 
-        canonical = latest_completed_session(db, PGG_SESSIONS, "participant-1")
+        canonical = latest_completed_session(db, RTG_SESSIONS, "participant-1")
 
         self.assertIsNotNone(canonical)
         self.assertEqual(canonical["session_id"], "valid")

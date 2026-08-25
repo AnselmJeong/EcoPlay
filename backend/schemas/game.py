@@ -21,7 +21,6 @@ class SessionState(BaseModel):
     current_partner_label: str | None = None
     endowment: float | None = None
     multiplier: float | None = None
-    group_size: int | None = None
     awaiting_post_block: bool | None = None
     tutorial_completed: bool | None = None
     comprehension_check_passed: bool | None = None
@@ -35,19 +34,6 @@ class SessionStartResponse(BaseModel):
 
 class SessionStartRequest(BaseModel):
     replace_completed: bool = False
-
-
-class PublicGoodsSubmitTrialRequest(BaseModel):
-    session_id: str
-    contribution: float = Field(ge=0)
-    response_time_ms: int = Field(ge=0)
-
-
-class PublicGoodsSubmitTrialResponse(BaseModel):
-    session: SessionState
-    trial: dict
-    share_per_player: float
-    completed: bool
 
 
 class RTGTutorialSubmitTrialRequest(BaseModel):

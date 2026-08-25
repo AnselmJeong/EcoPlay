@@ -722,6 +722,7 @@ class RTGSessionService:
                 "status": "in_progress",
                 "current_block_index": session["current_block_index"] + 1,
                 "current_trial_within_block": 1,
+                "current_balance": float(self.config.rtg.endowment),
                 "current_partner_balance": float(self.config.rtg.endowment),
                 "updated_at": utcnow(),
             }

@@ -828,6 +828,7 @@ export default function RTGMainPage() {
       setSession(response.session);
       setLastPostBlock(response);
       setLastTrial(null);
+      setAmountSent([0]);
       setClassification('high_return');
       setConfidence([0]);
       setWillingness([0]);

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from google.cloud.firestore_v1.base_query import FieldFilter
 from pydantic import BaseModel
 
 from core.auth import (
@@ -70,7 +71,7 @@ async def check_consent(
         db = get_firestore_client()
 
         query = db.collection("basic_info").where(
-            "user_id", "==", participant_id
+            filter=FieldFilter("user_id", "==", participant_id)
         )
         docs = list(query.stream())
 
@@ -101,7 +102,7 @@ async def get_consent_list(current_user=Depends(get_current_user_optional)):
 
         # Firebase UID로 조회
         query = db.collection("basic_info").where(
-            "firebase_uid", "==", current_user["uid"]
+            filter=FieldFilter("firebase_uid", "==", current_user["uid"])
         )
         docs = query.stream()
 

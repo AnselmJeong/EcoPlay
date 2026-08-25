@@ -1,0 +1,95 @@
+name: Deployment readiness
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.13"
+
+      - name: Install backend dependencies
+        run: uv sync --directory backend --locked --dev
+
+      - name: Test backend
+        run: uv run --directory backend pytest -q
+
+      - name: Audit backend dependencies
+        run: >-
+          uv run --directory backend pip-audit
+          --path .venv/lib/python3.13/site-packages
+          --skip-editable
+
+      - name: Build backend package
+        run: uv build --directory backend
+
+      - name: Build Cloud Run container
+        run: docker build --tag ecoplay-api:ci backend
+
+      - name: Smoke-test Cloud Run container
+        run: |
+          docker run --detach --rm \
+            --name ecoplay-api-ci \
+            --publish 18080:8080 \
+            --env ENVIRONMENT=production \
+            --env CORS_ORIGINS=https://ecoplay.example \
+            ecoplay-api:ci
+          trap 'docker stop ecoplay-api-ci' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:18080/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs ecoplay-api-ci
+          exit 1
+
+  frontend:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ecoplay-6fd53.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ecoplay-6fd53
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ecoplay-6fd53.firebasestorage.app
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:ci"
+      NEXT_PUBLIC_API_URL: https://ecoplay-api.example.invalid
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Type-check frontend
+        run: pnpm --dir frontend typecheck
+
+      - name: Lint frontend
+        run: pnpm --dir frontend lint
+
+      - name: Audit frontend production dependencies
+        run: pnpm --dir frontend audit --prod
+
+      - name: Build App Hosting frontend
+        run: pnpm --dir frontend build

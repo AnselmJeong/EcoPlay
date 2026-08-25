@@ -2,6 +2,10 @@
 __pycache__
 *.pyc
 .pytest_cache
+.ruff_cache
 .env
 secret
 tests
+build
+dist
+*.egg-info

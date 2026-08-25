@@ -11,7 +11,16 @@ dependencies = [
     "asyncpg>=0.30.0",
     "python-dotenv>=1.1.0",
     "firebase-admin>=6.9.0",
+    # 2.35.0 sends Firestore's `(default)` database as `%28default%29`,
+    # which the Firestore backend rejects as an invalid database ID.
+    "google-api-core[grpc]>=2.30.0,<2.35.0",
     "pyyaml>=6.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "pip-audit>=2.10.0",
+    "pytest>=8.4.2",
 ]
 
 [build-system]

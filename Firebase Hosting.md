@@ -57,14 +57,14 @@ uvicorn main:app --host 0.0.0.0 --port "$PORT"
 ```
 allow_origins=[
     "http://localhost:3000",
-    "http://localhost:9002",
+    "http://localhost:9000",
 ]
 ```
 
 이를 환경 변수로 관리하도록 변경해야 합니다.
 
 ```
-CORS_ORIGINS=http://localhost:9002,https://배포주소.hosted.app
+CORS_ORIGINS=http://localhost:9000,https://배포주소.hosted.app
 ```
 
 ### 0-4. 프로덕션 인증 강제
@@ -95,7 +95,7 @@ NEXT_PUBLIC_API_URL=https://Cloud-Run-주소
 
 외부 공개 전에 최소한 다음도 처리하는 것이 좋습니다.
 
-- Next.js 15.3.3 보안 업데이트
+- Next.js 보안 업데이트(현재 15.x 최신 patch인 15.5.23)
 - 현재 TypeScript 오류 3개 수정
 - `ignoreBuildErrors` 제거
 - Firestore rules를 저장소에 추가
@@ -104,6 +104,16 @@ NEXT_PUBLIC_API_URL=https://Cloud-Run-주소
 - 공개 회원가입을 제거하거나 임의의 연구 참여 코드로 교체
 
 이 준비가 완료되고 GitHub `main` 브랜치에 push된 다음 콘솔 작업을 시작하는 편이 안전합니다.
+
+코드 준비 상태는 저장소 루트에서 다음 명령으로 한 번에 검증할 수 있습니다.
+
+```bash
+./scripts/verify-deployment-readiness.sh
+```
+
+이 검사는 backend test/package build, frontend typecheck/lint/production build,
+Cloud Run container build를 수행합니다. 로컬 production build에는
+`frontend/.env.local`의 실제 Firebase Web App 값과 `NEXT_PUBLIC_API_URL`이 필요합니다.
 
 ------
 
@@ -403,6 +413,28 @@ CORS_ORIGINS=https://ecoplay-web--ecoplay-6fd53.asia-east1.hosted.app
 
 1. **Deploy**를 클릭합니다.
 
+같은 설정으로 backend를 다시 배포하려면 저장소 루트에서 다음 스크립트를 사용할 수 있습니다.
+
+```bash
+CORS_ORIGINS=https://ecoplay-web--ecoplay-6fd53.asia-east1.hosted.app \
+  ./scripts/deploy-cloud-run.sh
+```
+
+## 7-1. Firestore Security Rules 배포
+
+저장소의 `firestore.rules`는 browser의 직접 read/write를 모두 차단합니다. 이 파일을
+추가하는 것만으로 live project에 적용되지는 않으므로 Firebase CLI로 명시적으로
+배포해야 합니다.
+
+```bash
+firebase login
+./scripts/deploy-firestore-rules.sh
+```
+
+배포 대상은 `.firebaserc`와 script 모두에서 `ecoplay-6fd53`으로 고정되어 있습니다.
+Firebase Admin SDK를 사용하는 Cloud Run backend는 IAM으로 접근하므로 이 deny-all
+rule의 영향을 받지 않습니다.
+
 ------
 
 # 8단계: 전체 실험 흐름 확인
@@ -519,4 +551,5 @@ runConfig:
 7. Authentication domain과 CORS 설정
 8. 테스트 참여자 한 명으로 전체 실험 검증
 
-현재 단계에서 가장 좋은 다음 작업은 **배포 준비 코드 수정**입니다. 지금 상태로 App Hosting을 먼저 만들면 localhost API 주소, CORS, Firebase service-account 파일 때문에 정상 동작하지 않을 가능성이 높습니다.
+배포 준비 코드와 자동 검증은 완료되었습니다. 다음 작업은 변경사항을 commit/push한 뒤
+1단계의 Blaze/Budget 설정부터 순서대로 진행하는 것입니다.

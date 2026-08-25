@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_allowed_origins() -> list[str]:
-    configured_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    configured_origins = os.getenv("CORS_ORIGINS", "")
     if configured_origins.strip():
         return [
             origin.strip().rstrip("/")
@@ -28,7 +28,7 @@ def get_allowed_origins() -> list[str]:
         return ["http://localhost:3000", "http://localhost:9000"]
 
     logger.warning(
-        "CORS_ALLOWED_ORIGINS가 비어 있습니다. 배포된 frontend에서 API를 호출할 수 없습니다."
+        "CORS_ORIGINS가 비어 있습니다. 배포된 frontend에서 API를 호출할 수 없습니다."
     )
     return []
 

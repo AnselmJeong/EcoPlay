@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from google.cloud.firestore_v1.base_query import FieldFilter
 from pydantic import BaseModel
 
 from core.auth import (
@@ -44,7 +45,7 @@ async def submit_questionnaire(
 
         query = list(
             db.collection("questionnaire")
-            .where("user_id", "==", participant_id)
+            .where(filter=FieldFilter("user_id", "==", participant_id))
             .limit(1)
             .stream()
         )
@@ -115,7 +116,7 @@ async def check_questionnaire(
 
         docs = list(
             db.collection("questionnaire")
-            .where("user_id", "==", participant_id)
+            .where(filter=FieldFilter("user_id", "==", participant_id))
             .stream()
         )
 
@@ -155,7 +156,7 @@ async def get_questionnaire_detail(
 
         docs = list(
             db.collection("questionnaire")
-            .where("user_id", "==", participant_id)
+            .where(filter=FieldFilter("user_id", "==", participant_id))
             .limit(1)
             .stream()
         )

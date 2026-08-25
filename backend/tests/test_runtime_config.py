@@ -20,7 +20,7 @@ class RuntimeConfigTest(unittest.TestCase):
     def test_configured_origins_are_normalized(self):
         environment = {
             "ENVIRONMENT": "production",
-            "CORS_ALLOWED_ORIGINS": (
+            "CORS_ORIGINS": (
                 "https://ecoplay.example/ , https://admin.ecoplay.example"
             ),
         }

@@ -21,16 +21,16 @@ export default function Header() {
   const navItems = [
     { href: "/", label: "초기 화면", icon: House, active: pathname === "/" },
     {
-      href: "/questionnaire",
-      label: "설문지 작성",
-      icon: ClipboardList,
-      active: pathname?.startsWith("/questionnaire"),
-    },
-    {
       href: "/games",
       label: "게임 화면",
       icon: Gamepad2,
       active: pathname?.startsWith("/games") || pathname?.startsWith("/public-goods") || pathname?.startsWith("/trust-game"),
+    },
+    {
+      href: "/questionnaire",
+      label: "설문지 작성",
+      icon: ClipboardList,
+      active: pathname?.startsWith("/questionnaire"),
     },
     {
       href: "/report",

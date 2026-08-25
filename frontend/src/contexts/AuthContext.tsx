@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (medicalRecordNumber: string, birthDate: string) => Promise<void>;
+  login: (medicalRecordNumber: string, birthDate: string) => Promise<string>;
   logout: () => Promise<void>;
   getMedicalRecordNumber: () => string | null;
 }
@@ -122,12 +122,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!auth) {
         throw new Error('인증 서비스가 초기화되지 않았습니다.');
       }
-      await signInWithEmailAndPassword(auth, email, birthDate);
+      const credential = await signInWithEmailAndPassword(auth, email, birthDate);
+      const authenticatedMedicalRecordNumber = credential.user.email
+        ? emailToMedicalRecord(credential.user.email)
+        : medicalRecordNumber;
       
       toast({
         title: "로그인 성공",
         description: "환영합니다!",
       });
+      return authenticatedMedicalRecordNumber;
     } catch (error: unknown) {
       console.error('로그인 오류:', error);
       throw mapFirebaseAuthError(error);
@@ -151,8 +155,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getMedicalRecordNumber = (): string | null => {
-    if (!user || !user.email) return null;
-    return emailToMedicalRecord(user.email);
+    const authenticatedUser = user ?? auth?.currentUser;
+    if (!authenticatedUser?.email) return null;
+    return emailToMedicalRecord(authenticatedUser.email);
   };
 
   const value = {

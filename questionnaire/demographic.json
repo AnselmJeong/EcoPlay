@@ -6,12 +6,6 @@
       "description": "자신의 기본 정보를 입력해주세요.",
       "elements": [
         {
-          "type": "text",
-          "name": "hospital_id",
-          "title": "병록번호",
-          "isRequired": true
-        },
-        {
           "type": "radiogroup",
           "name": "admission",
           "title": "현재 입원 여부",

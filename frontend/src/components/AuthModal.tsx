@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (medicalRecordNumber: string) => void | Promise<void>;
 }
 
 export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
@@ -49,9 +49,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setIsLoading(true);
 
     try {
-      await login(medicalRecordNumber, birthDate);
+      const authenticatedMedicalRecordNumber = await login(medicalRecordNumber, birthDate);
+      await onSuccess?.(authenticatedMedicalRecordNumber);
       handleClose();
-      onSuccess?.();
     } catch (error: unknown) {
       toast({
         title: '로그인 실패',

@@ -111,7 +111,7 @@ function TutorialTransferScene({
           points={senderInvestment}
           caption="당신에게 보냄"
           tone="bot"
-          avatar={<BotAvatar alt="투자자 봇 아바타" className="h-[72px] w-[72px] shadow-[0_14px_26px_rgba(29,47,73,0.2)]" />}
+          avatar={<BotAvatar alt="투자자 봇 아바타" name="tutorial-investor" className="h-[72px] w-[72px] shadow-[0_14px_26px_rgba(29,47,73,0.2)]" />}
         />
 
         <div className="relative flex h-[86px] items-center justify-center">

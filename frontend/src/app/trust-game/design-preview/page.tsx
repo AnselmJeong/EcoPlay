@@ -204,7 +204,7 @@ function ExperimentalAllocationPie({
           value={kept}
           label="봇 보유"
           anchor={keptAnchor}
-          avatar={<BotAvatar alt="봇 아바타" className="h-[42px] w-[42px]" />}
+          avatar={<BotAvatar alt="봇 아바타" name="design-preview-bot" className="h-[42px] w-[42px]" />}
         />
         <FloatingValueCard
           tone="returned"

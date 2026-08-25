@@ -3,14 +3,50 @@ set -e
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-check_port() {
+stop_port() {
   local port="$1"
   local service_name="$2"
-  if lsof -iTCP:"$port" -sTCP:LISTEN -n -P >/dev/null 2>&1; then
-    echo "Error: port $port is already in use. Stop the existing process before starting $service_name."
-    lsof -iTCP:"$port" -sTCP:LISTEN -n -P
+  local listener_pids
+  local attempt
+
+  listener_pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+  if [ -z "$listener_pids" ]; then
+    return
+  fi
+
+  echo "→ Port $port is already in use; stopping the existing $service_name listener:"
+  lsof -iTCP:"$port" -sTCP:LISTEN -n -P || true
+
+  while IFS= read -r listener_pid; do
+    if [ -n "$listener_pid" ]; then
+      kill -TERM "$listener_pid" 2>/dev/null || true
+    fi
+  done <<< "$listener_pids"
+
+  for attempt in 1 2 3 4 5 6 7 8; do
+    if ! lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+      echo "  Port $port released."
+      return
+    fi
+    sleep 0.25
+  done
+
+  echo "  Listener did not stop gracefully; forcing it to exit."
+  listener_pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+  while IFS= read -r listener_pid; do
+    if [ -n "$listener_pid" ]; then
+      kill -KILL "$listener_pid" 2>/dev/null || true
+    fi
+  done <<< "$listener_pids"
+
+  sleep 0.25
+  if lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "Error: failed to release port $port for $service_name."
+    lsof -iTCP:"$port" -sTCP:LISTEN -n -P || true
     exit 1
   fi
+
+  echo "  Port $port released."
 }
 
 export NVM_DIR="$HOME/.nvm"
@@ -31,8 +67,8 @@ if [ "$(node --version | cut -d. -f1)" != "v22" ]; then
   exit 1
 fi
 
-check_port 8000 "backend"
-check_port 9002 "frontend"
+stop_port 8000 "backend"
+stop_port 9000 "frontend"
 
 echo "Starting EcoPlay services..."
 
@@ -66,7 +102,7 @@ spawn_in_new_session 'ENVIRONMENT=development exec uv run uvicorn main:app --rel
 BACKEND_PID=$SPAWNED_PID
 
 # Start frontend (Next.js)
-echo "→ Starting frontend (Next.js) on http://localhost:9002"
+echo "→ Starting frontend (Next.js) on http://localhost:9000"
 cd "$ROOT_DIR/frontend"
 spawn_in_new_session 'exec pnpm dev'
 FRONTEND_PID=$SPAWNED_PID
@@ -74,7 +110,7 @@ FRONTEND_PID=$SPAWNED_PID
 echo ""
 echo "EcoPlay is running:"
 echo "  Backend:  http://localhost:8000"
-echo "  Frontend: http://localhost:9002"
+echo "  Frontend: http://localhost:9000"
 echo ""
 echo "Press Ctrl+C to stop all services"
 

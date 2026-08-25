@@ -10,13 +10,12 @@ import {
   ArrowUpLeft,
   ArrowUpRight,
   BarChart3,
-  Bot,
   Coins,
   Loader2,
   PiggyBank,
-  UserRound,
 } from 'lucide-react';
 
+import { BotAvatar, ParticipantAvatar } from '@/components/GameAvatar';
 import GameLayout from '@/components/GameLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,58 +25,52 @@ import { PGGSubmitTrialResponse, SessionState, publicGoodsAPI } from '@/lib/api'
 
 type ActorStyle = {
   label: string;
+  avatarName: string;
   ring: string;
   surface: string;
-  icon: string;
   badge: string;
-  badgeText: string;
   barGradient: string;
 };
 
 const ACTOR_STYLES: ActorStyle[] = [
   {
     label: '당신',
+    avatarName: 'participant',
     ring: 'border-[#6be39f]',
     surface: 'bg-[#e9fbf0]',
-    icon: 'text-[#1e9d57]',
     badge: 'bg-[#27c563]',
-    badgeText: 'text-white',
     barGradient: 'linear-gradient(180deg, #24c463 0%, #1bb057 100%)',
   },
   {
     label: 'Bot 1',
+    avatarName: 'public-goods-1',
     ring: 'border-[#90bcff]',
     surface: 'bg-[#edf5ff]',
-    icon: 'text-[#2f70df]',
     badge: 'bg-[#3f7fe8]',
-    badgeText: 'text-white',
     barGradient: 'linear-gradient(180deg, #4f88ea 0%, #3d76db 100%)',
   },
   {
     label: 'Bot 2',
+    avatarName: 'public-goods-2',
     ring: 'border-[#ffd94d]',
     surface: 'bg-[#fff8d9]',
-    icon: 'text-[#cc9200]',
     badge: 'bg-[#f4bc00]',
-    badgeText: 'text-white',
     barGradient: 'linear-gradient(180deg, #f8c400 0%, #ebae00 100%)',
   },
   {
     label: 'Bot 3',
+    avatarName: 'public-goods-3',
     ring: 'border-[#ca9aff]',
     surface: 'bg-[#f6ecff]',
-    icon: 'text-[#9145e8]',
     badge: 'bg-[#9b4de9]',
-    badgeText: 'text-white',
     barGradient: 'linear-gradient(180deg, #a857eb 0%, #8f45df 100%)',
   },
   {
     label: 'Bot 4',
+    avatarName: 'public-goods-4',
     ring: 'border-[#f3a2d2]',
     surface: 'bg-[#fff0f8]',
-    icon: 'text-[#db3b93]',
     badge: 'bg-[#e43c94]',
-    badgeText: 'text-white',
     barGradient: 'linear-gradient(180deg, #eb4da3 0%, #d9378c 100%)',
   },
 ];
@@ -113,43 +106,43 @@ function ActorFigure({
   value,
   concealed,
   isPlayer = false,
-  compact = false,
+  badgeSide = 'right',
 }: {
   style: ActorStyle;
   value: number | string;
   concealed?: boolean;
   isPlayer?: boolean;
-  compact?: boolean;
+  badgeSide?: 'left' | 'right';
 }) {
+  const displayedValue = concealed ? '?' : value;
+  const desktopBadgePosition =
+    badgeSide === 'left'
+      ? 'md:left-auto md:right-full md:mr-2 md:translate-x-0'
+      : 'md:left-full md:ml-2 md:translate-x-0';
+
   return (
-    <div className="flex flex-col items-center">
-      <div
-        className={`flex items-center justify-center rounded-full border-[4px] shadow-[0_12px_22px_rgba(161,187,214,0.14)] ${style.ring} ${style.surface} ${
-          compact ? 'h-[56px] w-[56px]' : 'h-[68px] w-[68px]'
-        }`}
-      >
-        {isPlayer ? (
-          <UserRound className={`${compact ? 'h-6 w-6' : 'h-7 w-7'} ${style.icon}`} strokeWidth={2.2} />
-        ) : (
-          <Bot className={`${compact ? 'h-6 w-6' : 'h-7 w-7'} ${style.icon}`} strokeWidth={2.2} />
-        )}
-      </div>
+    <div className="relative inline-flex shrink-0 items-center justify-center pb-7 md:pb-0">
+      {isPlayer ? (
+        <ParticipantAvatar
+          alt="당신 아바타"
+          className={`${style.ring} ${style.surface} h-[80px] w-[80px] md:h-[88px] md:w-[88px]`}
+        />
+      ) : (
+        <BotAvatar
+          alt={`${style.label} 아바타`}
+          name={style.avatarName}
+          className={`${style.ring} ${style.surface} h-[58px] w-[58px] md:h-[60px] md:w-[60px]`}
+        />
+      )}
 
       <div
-        className={`mt-2 rounded-[16px] border border-[#dce5ef] bg-white px-2.5 py-2.5 text-center shadow-[0_10px_18px_rgba(168,184,204,0.14)] ${
-          compact ? 'min-w-[72px]' : 'min-w-[82px]'
+        className={`absolute left-1/2 z-20 mt-1 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full border-2 border-white px-2.5 py-1 font-bold text-white shadow-[0_5px_12px_rgba(51,65,85,0.25)] md:top-1/2 md:mt-0 md:-translate-y-1/2 ${desktopBadgePosition} ${style.badge} ${
+          isPlayer ? 'top-[80px] text-[0.76rem] md:text-[0.82rem]' : 'top-[58px] text-[0.66rem] md:text-[0.7rem]'
         }`}
       >
-        <div
-          className={`mx-auto mb-2 flex items-center justify-center rounded-full font-black ${style.badge} ${style.badgeText} ${
-            compact ? 'h-9 w-9 text-[0.96rem]' : 'h-10 w-10 text-[1rem]'
-          }`}
-        >
-          {concealed ? '?' : value}
-        </div>
-        <div className={`font-semibold tracking-[-0.03em] text-[#334155] ${compact ? 'text-[0.88rem]' : 'text-[0.95rem]'}`}>
-          {style.label}
-        </div>
+        <span className="tracking-[-0.03em]">{style.label}</span>
+        <span aria-hidden="true" className="text-white/55">·</span>
+        <span className="font-black tabular-nums">{displayedValue}</span>
       </div>
     </div>
   );
@@ -172,44 +165,42 @@ function PlayerBoard({
   return (
     <section className="mx-auto w-full max-w-[720px] rounded-[26px] border border-[#dbe8f3] bg-white/92 px-4 py-4 shadow-[0_18px_38px_rgba(190,206,223,0.16)] md:px-5">
       <div className="rounded-[22px] bg-[radial-gradient(circle_at_50%_18%,rgba(233,249,255,0.95)_0%,rgba(255,255,255,0)_48%),linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-2 py-3">
-        <div className="relative mx-auto hidden h-[470px] max-w-[760px] md:block">
+        <div className="relative mx-auto hidden h-[390px] max-w-[760px] md:block">
           <div className="absolute left-1/2 top-[0%] z-20 -translate-x-1/2">
-            <ActorFigure style={ACTOR_STYLES[0]} value={playerValue} isPlayer compact />
+            <ActorFigure style={ACTOR_STYLES[0]} value={playerValue} isPlayer />
           </div>
 
-          <div className="absolute left-[14%] top-[29%] z-20 -translate-x-1/2 -translate-y-1/2">
+          <div className="absolute left-[14%] top-[27%] z-20 -translate-x-1/2 -translate-y-1/2">
             <ActorFigure
               style={ACTOR_STYLES[1]}
               value={latestBotContributions?.[0] ?? '?'}
               concealed={!latestBotContributions}
-              compact
             />
           </div>
 
-          <div className="absolute left-[27%] top-[80%] z-20 -translate-x-1/2 -translate-y-1/2">
+          <div className="absolute left-[27%] top-[82%] z-20 -translate-x-1/2 -translate-y-1/2">
             <ActorFigure
               style={ACTOR_STYLES[2]}
               value={latestBotContributions?.[1] ?? '?'}
               concealed={!latestBotContributions}
-              compact
             />
           </div>
 
-          <div className="absolute left-[73%] top-[80%] z-20 -translate-x-1/2 -translate-y-1/2">
+          <div className="absolute left-[73%] top-[82%] z-20 -translate-x-1/2 -translate-y-1/2">
             <ActorFigure
               style={ACTOR_STYLES[3]}
               value={latestBotContributions?.[2] ?? '?'}
               concealed={!latestBotContributions}
-              compact
+              badgeSide="left"
             />
           </div>
 
-          <div className="absolute left-[86%] top-[29%] z-20 -translate-x-1/2 -translate-y-1/2">
+          <div className="absolute left-[86%] top-[27%] z-20 -translate-x-1/2 -translate-y-1/2">
             <ActorFigure
               style={ACTOR_STYLES[4]}
               value={latestBotContributions?.[3] ?? '?'}
               concealed={!latestBotContributions}
-              compact
+              badgeSide="left"
             />
           </div>
 
@@ -240,8 +231,8 @@ function PlayerBoard({
 
         <div className="space-y-4 md:hidden">
           <div className="flex flex-col items-center">
-            <ActorFigure style={ACTOR_STYLES[0]} value={playerValue} isPlayer compact />
-            <div className="mt-2 text-[#44c98a]">
+            <ActorFigure style={ACTOR_STYLES[0]} value={playerValue} isPlayer />
+            <div className="mt-1 text-[#44c98a]">
               <ArrowDown className="h-6 w-6 stroke-[2.4]" />
             </div>
             <div className="mt-1 flex h-[82px] w-full max-w-[170px] flex-col items-center justify-center rounded-full border-[3px] border-[#61df9d] bg-[radial-gradient(circle_at_50%_35%,#ffffff_0%,#fbfffd_60%,#f4fff8_100%)] shadow-[0_14px_24px_rgba(156,213,181,0.12)]">
@@ -258,7 +249,6 @@ function PlayerBoard({
                 style={style}
                 value={latestBotContributions?.[index] ?? '?'}
                 concealed={!latestBotContributions}
-                compact
               />
             ))}
           </div>

@@ -7,6 +7,7 @@ import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 import { consentAPI, questionnaireAPI } from '@/lib/api';
 
 
@@ -14,13 +15,17 @@ export default function LandingPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { user, loading, getMedicalRecordNumber } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
-  const handleAuthSuccess = async () => {
+  const handleAuthSuccess = async (authenticatedMedicalRecordNumber?: string) => {
     // 로그인 성공 후 동의서 데이터 확인
-    const medicalRecordNumber = getMedicalRecordNumber();
+    const medicalRecordNumber = authenticatedMedicalRecordNumber ?? getMedicalRecordNumber();
     if (!medicalRecordNumber) {
-      console.error('병록번호를 가져올 수 없습니다.');
-      router.push('/consent');
+      toast({
+        title: '로그인 정보 확인 실패',
+        description: '인증된 병록번호를 확인할 수 없습니다. 다시 로그인해주세요.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -38,8 +43,11 @@ export default function LandingPage() {
         router.push('/consent');
       }
     } catch (error) {
-      console.error('상태 확인 오류:', error);
-      router.push('/consent');
+      toast({
+        title: '참여 상태 확인 실패',
+        description: error instanceof Error ? error.message : '저장된 참여 정보를 확인하지 못했습니다.',
+        variant: 'destructive',
+      });
     }
   };
 

@@ -25,7 +25,7 @@ def get_allowed_origins() -> list[str]:
 
     environment = os.getenv("ENVIRONMENT", "production").strip().lower()
     if environment == "development":
-        return ["http://localhost:3000", "http://localhost:9002"]
+        return ["http://localhost:3000", "http://localhost:9000"]
 
     logger.warning(
         "CORS_ALLOWED_ORIGINS가 비어 있습니다. 배포된 frontend에서 API를 호출할 수 없습니다."
@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
     # TODO: 리소스 정리
 
 
-app = FastAPI(lifespan=lifespan, title="EcoPlay API", version="0.1.0")
+app = FastAPI(lifespan=lifespan, title="EcoPlay API", version="0.2.0")
 
 # CORS 설정
 app.add_middleware(

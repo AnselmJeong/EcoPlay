@@ -166,6 +166,7 @@ function InvestmentScene({
         <div className="flex flex-col items-center gap-3">
           <BotAvatar
             alt={`${partnerLabel} 아바타`}
+            name={partnerLabel}
             className="h-[72px] w-[72px] shadow-[0_14px_26px_rgba(29,47,73,0.2)]"
           />
           <div className="text-[1.05rem] font-bold tracking-[-0.02em] text-[#98a7bb]">{partnerLabel}</div>
@@ -278,10 +279,12 @@ function ExperimentalAllocationPie({
   total,
   returned,
   kept,
+  partnerName,
 }: {
   total: number;
   returned: number;
   kept: number;
+  partnerName: string;
 }) {
   const safeTotal = Math.max(total, 1);
   const returnedShare = (returned / safeTotal) * 100;
@@ -406,7 +409,7 @@ function ExperimentalAllocationPie({
           value={kept}
           label="봇 보유"
           anchor={keptAnchor}
-          avatar={<BotAvatar alt="봇 아바타" className="h-[36px] w-[36px]" />}
+          avatar={<BotAvatar alt={`${partnerName} 아바타`} name={partnerName} className="h-[36px] w-[36px]" />}
         />
         <FloatingValueCard
           tone="returned"
@@ -428,11 +431,13 @@ function ExperimentalResultPanel({
   amountReceivedByPartner,
   partnerReturnAmount,
   partnerKept,
+  partnerName,
 }: {
   amountSent: number;
   amountReceivedByPartner: number;
   partnerReturnAmount: number;
   partnerKept: number;
+  partnerName: string;
 }) {
   return (
     <section className="overflow-hidden rounded-[28px] border border-[#d5e3db] bg-white px-6 py-8 shadow-[0_18px_36px_rgba(192,205,213,0.14)] md:px-8 md:py-9">
@@ -450,6 +455,7 @@ function ExperimentalResultPanel({
           total={amountReceivedByPartner}
           returned={partnerReturnAmount}
           kept={partnerKept}
+          partnerName={partnerName}
         />
       </div>
     </section>
@@ -486,6 +492,7 @@ function ResultRevealPanel({
         amountReceivedByPartner={trial.amount_received_by_partner}
         partnerReturnAmount={trial.partner_return_amount}
         partnerKept={partnerKept}
+        partnerName={partnerLabel}
       />
 
       <section className="grid gap-3 md:grid-cols-2 md:gap-4">
@@ -512,6 +519,7 @@ function ResultRevealPanel({
           <div className="flex items-center gap-3">
             <BotAvatar
               alt={`${partnerLabel} 아바타`}
+              name={partnerLabel}
               className="h-[64px] w-[64px] shadow-[0_10px_18px_rgba(29,47,73,0.15)]"
             />
             <div className="min-w-0 flex-1">
@@ -612,8 +620,12 @@ function RatingSlider({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-[0.95rem] font-medium text-[#2a353d]">{label}</span>
-        <span className="rounded-full bg-[#e9f6f2] px-3 py-1 text-[0.86rem] font-semibold text-[#0b7b53]">
-          {value[0]} / 7
+        <span
+          className={`rounded-full px-3 py-1 text-[0.86rem] font-semibold ${
+            value[0] >= 1 ? 'bg-[#e9f6f2] text-[#0b7b53]' : 'bg-amber-50 text-amber-700'
+          }`}
+        >
+          {value[0] >= 1 ? `${value[0]} / 7` : '선택 필요'}
         </span>
       </div>
       <SliderPrimitive.Root
@@ -658,6 +670,8 @@ function PostBlockPanel({
   onSubmit: () => void;
   isLoading: boolean;
 }) {
+  const ratingsComplete = confidence[0] >= 1 && willingness[0] >= 1;
+
   return (
     <section className="overflow-hidden rounded-[30px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.58)_100%)] px-5 py-6 shadow-[0_20px_48px_rgba(198,208,221,0.14)] backdrop-blur-[2px] md:px-8 md:py-7 lg:px-10 lg:py-8">
       <div className="mx-auto flex w-full max-w-[900px] flex-col">
@@ -699,10 +713,16 @@ function PostBlockPanel({
           <RatingSlider label="다시 함께 게임하고 싶은 정도" value={willingness} onValueChange={onWillingnessChange} />
         </div>
 
-        <div className="mt-7 flex justify-end">
+        <div className="mt-7 flex flex-col items-end gap-3">
+          {!ratingsComplete ? (
+            <p id="post-block-rating-help" className="text-sm font-semibold text-[#b45309]">
+              두 척도를 모두 1–7 범위로 응답해주세요.
+            </p>
+          ) : null}
           <Button
             onClick={onSubmit}
-            disabled={isLoading}
+            disabled={isLoading || !ratingsComplete}
+            aria-describedby={!ratingsComplete ? 'post-block-rating-help' : undefined}
             className="h-[54px] min-w-[220px] rounded-[15px] bg-[linear-gradient(90deg,#0c7b53_0%,#1ac78c_100%)] px-8 text-[0.98rem] font-bold text-white shadow-[0_16px_30px_rgba(18,185,129,0.22)] hover:opacity-95"
           >
             {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
@@ -788,6 +808,14 @@ export default function RTGMainPage() {
 
   const handleSubmitPostBlock = async () => {
     if (!session) return;
+    if (confidence[0] < 1 || willingness[0] < 1) {
+      toast({
+        title: '평가를 완료해주세요',
+        description: '확신도와 다시 함께 게임하고 싶은 정도를 모두 1–7 범위로 선택해야 합니다.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {

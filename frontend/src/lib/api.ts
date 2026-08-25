@@ -168,6 +168,36 @@ async function getAuthToken(): Promise<string | null> {
   }
 }
 
+function formatApiErrorDetail(payload: unknown, fallback: string): string {
+  if (typeof payload !== 'object' || payload === null || !('detail' in payload)) {
+    return fallback;
+  }
+
+  const detail = payload.detail;
+  if (typeof detail === 'string') {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    const messages = detail.flatMap((item) => {
+      if (typeof item !== 'object' || item === null) return [];
+
+      const message = 'msg' in item ? String(item.msg) : '';
+      const location =
+        'loc' in item && Array.isArray(item.loc)
+          ? item.loc.filter((part: unknown) => part !== 'body').join('.')
+          : '';
+
+      if (!message) return [];
+      return [location ? `${location}: ${message}` : message];
+    });
+
+    return messages.length > 0 ? messages.join('\n') : fallback;
+  }
+
+  return fallback;
+}
+
 async function apiCall<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = await getAuthToken();
@@ -184,8 +214,8 @@ async function apiCall<T = any>(endpoint: string, options: RequestInit = {}): Pr
   if (!response.ok) {
     let detail = `${response.status} ${response.statusText}`;
     try {
-      const payload = await response.json();
-      detail = payload.detail || detail;
+      const payload: unknown = await response.json();
+      detail = formatApiErrorDetail(payload, detail);
     } catch {
       // ignore json parse failure
     }

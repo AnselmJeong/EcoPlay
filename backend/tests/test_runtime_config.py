@@ -10,7 +10,7 @@ class RuntimeConfigTest(unittest.TestCase):
         with patch.dict(os.environ, {"ENVIRONMENT": "development"}, clear=True):
             self.assertEqual(
                 get_allowed_origins(),
-                ["http://localhost:3000", "http://localhost:9002"],
+                ["http://localhost:3000", "http://localhost:9000"],
             )
 
     def test_production_requires_explicit_origin(self):

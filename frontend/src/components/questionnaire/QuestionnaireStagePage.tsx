@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { QuestionnaireFlow } from "questionnaire-js";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,13 @@ type QuestionnaireStatus = {
   saved_questionnaires?: string[];
 };
 
+type QuestionnaireDetail = QuestionnaireStatus & {
+  exists?: boolean;
+  answers?: Record<string, unknown>;
+};
+
+const EMPTY_QUESTIONNAIRE_ANSWERS: Record<string, unknown> = {};
+
 export default function QuestionnaireStagePage({
   mode,
   questionnaires,
@@ -40,6 +47,7 @@ export default function QuestionnaireStagePage({
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+  const submissionInProgress = useRef(false);
   const router = useRouter();
   const { getMedicalRecordNumber } = useAuth();
   const { toast } = useToast();
@@ -59,7 +67,19 @@ export default function QuestionnaireStagePage({
         )) as QuestionnaireStatus;
 
         if (mode === "demographic") {
-          return;
+          if (status.demographic_completed) {
+            router.replace(completionRoute);
+            return;
+          }
+
+          const detail = (await questionnaireAPI.getDetail(
+            medicalRecordNumber
+          )) as QuestionnaireDetail;
+          if (detail.exists && detail.answers && Object.keys(detail.answers).length > 0) {
+            setQuestionnaireAnswers({
+              [questionnaires[0].key]: detail.answers,
+            });
+          }
         } else {
           if (!status.demographic_completed) {
             router.replace("/questionnaire/demographic");
@@ -80,51 +100,61 @@ export default function QuestionnaireStagePage({
     };
 
     void checkAccess();
-  }, [getMedicalRecordNumber, mode, router]);
+  }, [completionRoute, getMedicalRecordNumber, mode, questionnaires, router]);
 
   const currentQuestionnaire = questionnaires[currentQuestionnaireIndex];
+  const isLastQuestionnaire = currentQuestionnaireIndex === questionnaires.length - 1;
+  const initialAnswers =
+    questionnaireAnswers[currentQuestionnaire.key] ?? EMPTY_QUESTIONNAIRE_ANSWERS;
 
-  const handleAnswer = (result: { answers: Record<string, unknown> }) => {
-    setQuestionnaireAnswers((prev) => ({
-      ...prev,
-      [currentQuestionnaire.key]: result.answers,
-    }));
-  };
-
-  const saveQuestionnaireProgress = async (completed: boolean) => {
+  const saveQuestionnaireProgress = async (
+    answers: Record<string, unknown>,
+    completed: boolean
+  ) => {
     const medicalRecordNumber = getMedicalRecordNumber();
     if (!medicalRecordNumber) {
       throw new Error("사용자 정보를 찾을 수 없습니다.");
     }
 
-    const currentAnswers = questionnaireAnswers[currentQuestionnaire.key];
-    if (!currentAnswers || Object.keys(currentAnswers).length === 0) {
+    if (Object.keys(answers).length === 0) {
       throw new Error("현재 설문 응답을 찾을 수 없습니다.");
     }
 
     await questionnaireAPI.submitAnswers({
       medicalRecordNumber,
-      answers: currentAnswers,
+      answers,
       questionnaireName: currentQuestionnaire.key,
       completed,
     });
   };
 
-  const handlePrevious = () => {
-    if (currentQuestionnaireIndex > 0) {
-      setCurrentQuestionnaireIndex((prev) => prev - 1);
-      return;
-    }
+  const handleAnswer = async (result: {
+    answers: Record<string, unknown>;
+  }) => {
+    if (submissionInProgress.current) return;
 
-    router.push(previousRoute);
-  };
-
-  const handleNext = async () => {
-    if (currentQuestionnaireIndex >= questionnaires.length - 1) return;
-
+    submissionInProgress.current = true;
     setIsSubmitting(true);
+
     try {
-      await saveQuestionnaireProgress(false);
+      await saveQuestionnaireProgress(
+        result.answers,
+        isLastQuestionnaire && markCompleteOnFinish
+      );
+
+      if (isLastQuestionnaire) {
+        toast({
+          title: "설문 완료",
+          description: "설문이 자동으로 저장되었습니다.",
+        });
+        router.push(completionRoute);
+        return;
+      }
+
+      setQuestionnaireAnswers((prev) => ({
+        ...prev,
+        [currentQuestionnaire.key]: result.answers,
+      }));
       toast({
         title: "임시 저장 완료",
         description: `${currentQuestionnaire.name} 설문이 저장되었습니다.`,
@@ -139,33 +169,19 @@ export default function QuestionnaireStagePage({
         variant: "destructive",
       });
     } finally {
+      submissionInProgress.current = false;
       setIsSubmitting(false);
     }
   };
 
-  const handleComplete = async () => {
-    setIsSubmitting(true);
-    try {
-      await saveQuestionnaireProgress(markCompleteOnFinish);
-      toast({
-        title: "설문 완료",
-        description: "설문이 성공적으로 저장되었습니다.",
-      });
-      router.push(completionRoute);
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "설문 저장에 실패했습니다.";
-      toast({
-        title: "저장 오류",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+  const handlePrevious = () => {
+    if (currentQuestionnaireIndex > 0) {
+      setCurrentQuestionnaireIndex((prev) => prev - 1);
+      return;
     }
-  };
 
-  const isLastQuestionnaire = currentQuestionnaireIndex === questionnaires.length - 1;
+    router.push(previousRoute);
+  };
 
   if (isCheckingAccess) {
     return (
@@ -208,11 +224,11 @@ export default function QuestionnaireStagePage({
                 formId={`${mode}-${currentQuestionnaire.key}`}
                 questionnaire={currentQuestionnaire.schema}
                 onComplete={handleAnswer}
-                initialAnswers={questionnaireAnswers[currentQuestionnaire.key] ?? {}}
+                initialAnswers={initialAnswers}
               />
             </div>
 
-            <div className="mt-8 flex justify-between">
+            <div className="mt-8 flex items-center justify-between">
               <Button
                 onClick={handlePrevious}
                 disabled={isSubmitting}
@@ -224,45 +240,14 @@ export default function QuestionnaireStagePage({
                 이전
               </Button>
 
-              {isLastQuestionnaire ? (
-                <Button
-                  onClick={handleComplete}
-                  disabled={isSubmitting}
-                  size="lg"
-                  className="bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      저장 중...
-                    </>
-                  ) : (
-                    <>
-                      완료
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleNext}
-                  disabled={isSubmitting}
-                  size="lg"
-                  className="bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      저장 중...
-                    </>
-                  ) : (
-                    <>
-                      다음
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              )}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                <span>
+                  {isSubmitting
+                    ? "응답을 저장하고 있습니다."
+                    : "마지막 항목을 완료하면 자동으로 저장됩니다."}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>

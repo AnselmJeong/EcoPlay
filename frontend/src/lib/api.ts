@@ -55,6 +55,21 @@ export interface SessionStartResponse {
   session: SessionState;
 }
 
+export interface StartSessionOptions {
+  replaceCompleted?: boolean;
+}
+
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly code?: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 export interface PGGSubmitTrialResponse {
   session: SessionState;
   trial: {
@@ -195,7 +210,24 @@ function formatApiErrorDetail(payload: unknown, fallback: string): string {
     return messages.length > 0 ? messages.join('\n') : fallback;
   }
 
+  if (typeof detail === 'object' && detail !== null && 'message' in detail) {
+    return String(detail.message);
+  }
+
   return fallback;
+}
+
+function getApiErrorCode(payload: unknown): string | undefined {
+  if (typeof payload !== 'object' || payload === null || !('detail' in payload)) {
+    return undefined;
+  }
+
+  const detail = payload.detail;
+  if (typeof detail !== 'object' || detail === null || !('code' in detail)) {
+    return undefined;
+  }
+
+  return String(detail.code);
 }
 
 async function apiCall<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -213,20 +245,26 @@ async function apiCall<T = any>(endpoint: string, options: RequestInit = {}): Pr
 
   if (!response.ok) {
     let detail = `${response.status} ${response.statusText}`;
+    let code: string | undefined;
     try {
       const payload: unknown = await response.json();
       detail = formatApiErrorDetail(payload, detail);
+      code = getApiErrorCode(payload);
     } catch {
       // ignore json parse failure
     }
-    throw new Error(detail);
+    throw new ApiError(response.status, detail, code);
   }
 
   return response.json() as Promise<T>;
 }
 
 export const publicGoodsAPI = {
-  startSession: async () => apiCall<SessionStartResponse>('/game/pgg/start-session', { method: 'POST' }),
+  startSession: async (options: StartSessionOptions = {}) =>
+    apiCall<SessionStartResponse>('/game/pgg/start-session', {
+      method: 'POST',
+      body: JSON.stringify({ replace_completed: options.replaceCompleted ?? false }),
+    }),
   getSession: async (sessionId: string) => apiCall<SessionStartResponse>(`/game/pgg/session/${sessionId}`),
   submitTrial: async (data: {
     session_id: string;
@@ -240,7 +278,11 @@ export const publicGoodsAPI = {
 };
 
 export const rtgTutorialAPI = {
-  startSession: async () => apiCall<SessionStartResponse>('/game/rtg/tutorial/start', { method: 'POST' }),
+  startSession: async (options: StartSessionOptions = {}) =>
+    apiCall<SessionStartResponse>('/game/rtg/tutorial/start', {
+      method: 'POST',
+      body: JSON.stringify({ replace_completed: options.replaceCompleted ?? false }),
+    }),
   getSession: async (sessionId: string) => apiCall<SessionStartResponse>(`/game/rtg/tutorial/session/${sessionId}`),
   submitTrial: async (data: {
     session_id: string;
@@ -264,7 +306,11 @@ export const rtgTutorialAPI = {
 };
 
 export const rtgAPI = {
-  startSession: async () => apiCall<SessionStartResponse>('/game/rtg/start-session', { method: 'POST' }),
+  startSession: async (options: StartSessionOptions = {}) =>
+    apiCall<SessionStartResponse>('/game/rtg/start-session', {
+      method: 'POST',
+      body: JSON.stringify({ replace_completed: options.replaceCompleted ?? false }),
+    }),
   getSession: async (sessionId: string) => apiCall<SessionStartResponse>(`/game/rtg/session/${sessionId}`),
   submitTrial: async (data: {
     session_id: string;

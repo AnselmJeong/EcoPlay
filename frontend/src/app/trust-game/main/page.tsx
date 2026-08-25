@@ -17,6 +17,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { RTGPostBlockResponse, RTGSubmitTrialResponse, SessionState, rtgAPI } from '@/lib/api';
+import { startSessionWithRestartConfirmation } from '@/lib/start-session';
 
 type PartnerClassification = 'high_return' | 'low_return' | 'unpredictable';
 
@@ -763,7 +764,11 @@ export default function RTGMainPage() {
   const handleStart = async () => {
     setIsLoading(true);
     try {
-      const response = await rtgAPI.startSession();
+      const response = await startSessionWithRestartConfirmation(
+        rtgAPI.startSession,
+        '반복 신뢰 게임',
+      );
+      if (!response) return;
       setSession(response.session);
       setLastTrial(null);
       setLastPostBlock(null);

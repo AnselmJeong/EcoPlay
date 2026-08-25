@@ -33,6 +33,10 @@ class SessionStartResponse(BaseModel):
     session: SessionState
 
 
+class SessionStartRequest(BaseModel):
+    replace_completed: bool = False
+
+
 class PublicGoodsSubmitTrialRequest(BaseModel):
     session_id: str
     contribution: float = Field(ge=0)

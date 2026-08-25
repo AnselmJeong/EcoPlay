@@ -13,6 +13,7 @@ from schemas.game import (
     RTGTutorialComprehensionResponse,
     RTGTutorialSubmitTrialRequest,
     RTGTutorialSubmitTrialResponse,
+    SessionStartRequest,
     SessionStartResponse,
 )
 from services.game_sessions import (
@@ -25,11 +26,19 @@ router = APIRouter(prefix="/game", tags=["game"])
 
 
 @router.post("/pgg/start-session", response_model=SessionStartResponse)
-async def start_pgg_session(current_user=Depends(get_current_user_optional)):
+async def start_pgg_session(
+    request: SessionStartRequest | None = None,
+    current_user=Depends(get_current_user_optional),
+):
     db = get_firestore_client()
     service = PGGSessionService(db)
     user_id = extract_medical_record_number(current_user)
-    return {"session": service.start_session(user_id)}
+    return {
+        "session": service.start_session(
+            user_id,
+            replace_completed=request.replace_completed if request else False,
+        )
+    }
 
 
 @router.get("/pgg/session/{session_id}", response_model=SessionStartResponse)
@@ -57,11 +66,19 @@ async def submit_pgg_trial(
 
 
 @router.post("/rtg/tutorial/start", response_model=SessionStartResponse)
-async def start_rtg_tutorial(current_user=Depends(get_current_user_optional)):
+async def start_rtg_tutorial(
+    request: SessionStartRequest | None = None,
+    current_user=Depends(get_current_user_optional),
+):
     db = get_firestore_client()
     service = RTGTutorialService(db)
     user_id = extract_medical_record_number(current_user)
-    return {"session": service.start_session(user_id)}
+    return {
+        "session": service.start_session(
+            user_id,
+            replace_completed=request.replace_completed if request else False,
+        )
+    }
 
 
 @router.get("/rtg/tutorial/session/{session_id}", response_model=SessionStartResponse)
@@ -112,11 +129,19 @@ async def submit_rtg_tutorial_comprehension(
 
 
 @router.post("/rtg/start-session", response_model=SessionStartResponse)
-async def start_rtg_session(current_user=Depends(get_current_user_optional)):
+async def start_rtg_session(
+    request: SessionStartRequest | None = None,
+    current_user=Depends(get_current_user_optional),
+):
     db = get_firestore_client()
     service = RTGSessionService(db)
     user_id = extract_medical_record_number(current_user)
-    return {"session": service.start_session(user_id)}
+    return {
+        "session": service.start_session(
+            user_id,
+            replace_completed=request.replace_completed if request else False,
+        )
+    }
 
 
 @router.get("/rtg/session/{session_id}", response_model=SessionStartResponse)

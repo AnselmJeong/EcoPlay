@@ -22,6 +22,7 @@ import {
   TutorialSubmitResponse,
   rtgTutorialAPI,
 } from '@/lib/api';
+import { startSessionWithRestartConfirmation } from '@/lib/start-session';
 
 type ReturnBasis = 'tripled_amount' | 'original_amount' | 'fixed_bonus';
 type QuizFeedbackItem = TutorialComprehensionResponse['feedback'][number];
@@ -532,7 +533,11 @@ export default function RTGTutorialPage() {
   const startTutorial = async () => {
     setIsLoading(true);
     try {
-      const response = await rtgTutorialAPI.startSession();
+      const response = await startSessionWithRestartConfirmation(
+        rtgTutorialAPI.startSession,
+        '신뢰 게임 튜토리얼',
+      );
+      if (!response) return;
       setSession(response.session);
       setLastResult(null);
       setQuizResult(null);

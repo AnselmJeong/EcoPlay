@@ -22,6 +22,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { PGGSubmitTrialResponse, SessionState, publicGoodsAPI } from '@/lib/api';
+import { startSessionWithRestartConfirmation } from '@/lib/start-session';
 
 type ActorStyle = {
   label: string;
@@ -549,7 +550,11 @@ export default function PublicGoodsGamePage() {
   const handleStart = async () => {
     setIsLoading(true);
     try {
-      const response = await publicGoodsAPI.startSession();
+      const response = await startSessionWithRestartConfirmation(
+        publicGoodsAPI.startSession,
+        '공공재 게임',
+      );
+      if (!response) return;
       setSession(response.session);
       setLastResult(null);
       setSelectedContribution([0]);

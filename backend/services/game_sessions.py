@@ -25,9 +25,29 @@ PARTNER_CLASSIFICATION_MAP = {
     3: "unpredictable",
 }
 
+INVALID_SESSION_STATUSES = {"abandoned", "invalidated", "invalid"}
+PARTICIPANT_RESTARTED = "participant_restarted"
+
 
 def utcnow() -> datetime:
     return datetime.utcnow()
+
+
+def is_invalidated_session(session: dict[str, Any]) -> bool:
+    return bool(session.get("invalidated_at")) or session.get("status") in INVALID_SESSION_STATUSES
+
+
+def is_completed_session(session: dict[str, Any], collection_name: str) -> bool:
+    if collection_name == RTG_TUTORIAL_SESSIONS:
+        return bool(
+            session.get("tutorial_completed")
+            and session.get("comprehension_check_passed")
+        )
+    return bool(session.get("completed"))
+
+
+def is_valid_completed_session(session: dict[str, Any], collection_name: str) -> bool:
+    return is_completed_session(session, collection_name) and not is_invalidated_session(session)
 
 
 def build_session_id(prefix: str) -> str:
@@ -38,12 +58,85 @@ def get_document_or_404(doc_ref, detail: str):
     doc = doc_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail=detail)
-    return doc.to_dict()
+    data = doc.to_dict()
+    if is_invalidated_session(data):
+        raise HTTPException(status_code=410, detail="This session is no longer valid.")
+    return data
 
 
 def sorted_docs(stream, sort_key: str) -> list[dict[str, Any]]:
     docs = [doc.to_dict() for doc in stream]
     return sorted(docs, key=lambda item: item.get(sort_key, 0))
+
+
+def prepare_for_new_session(
+    db,
+    session_collection_name: str,
+    response_collection_names: tuple[str, ...],
+    user_id: str,
+    replace_completed: bool,
+) -> None:
+    """Enforce one canonical completed session before creating a new attempt."""
+    session_collection = db.collection(session_collection_name)
+    session_docs = list(session_collection.where("user_id", "==", user_id).stream())
+    active_completed: list[tuple[Any, dict[str, Any]]] = []
+    unfinished: list[tuple[Any, dict[str, Any]]] = []
+
+    for doc in session_docs:
+        session = doc.to_dict()
+        if is_invalidated_session(session):
+            continue
+        if is_completed_session(session, session_collection_name):
+            active_completed.append((doc, session))
+        else:
+            unfinished.append((doc, session))
+
+    if active_completed and not replace_completed:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "completed_session_exists",
+                "message": "A completed session already exists. Confirm replacement to start again.",
+            },
+        )
+
+    now = utcnow()
+    if replace_completed:
+        for doc, _session in active_completed:
+            session_collection.document(doc.id).update(
+                {
+                    "status": "invalidated",
+                    "invalidated_at": now,
+                    "exclusion_reason": PARTICIPANT_RESTARTED,
+                    "updated_at": now,
+                }
+            )
+
+    for doc, session in unfinished:
+        session_id = session.get("session_id", doc.id)
+        for response_collection_name in response_collection_names:
+            response_collection = db.collection(response_collection_name)
+            response_docs = list(
+                response_collection.where("session_id", "==", session_id).stream()
+            )
+            for response_doc in response_docs:
+                response_collection.document(response_doc.id).delete()
+
+        tombstone = {
+            "session_id": session_id,
+            "user_id": user_id,
+            "game_type": session.get("game_type"),
+            "config_version": session.get("config_version"),
+            "status": "abandoned",
+            "completed": False,
+            "invalidated_at": now,
+            "exclusion_reason": PARTICIPANT_RESTARTED,
+            "created_at": session.get("created_at"),
+            "updated_at": now,
+        }
+        session_collection.document(doc.id).set(
+            {key: value for key, value in tombstone.items() if value is not None}
+        )
 
 
 class PGGSessionService:
@@ -68,7 +161,14 @@ class PGGSessionService:
 
         return float(previous_trial.to_dict()["pgg_contribution"])
 
-    def start_session(self, user_id: str) -> dict[str, Any]:
+    def start_session(self, user_id: str, replace_completed: bool = False) -> dict[str, Any]:
+        prepare_for_new_session(
+            self.db,
+            PGG_SESSIONS,
+            (PGG_TRIALS,),
+            user_id,
+            replace_completed,
+        )
         session_id = build_session_id("pgg")
         seed = random.randint(1, 2_147_483_647)
         session_data = {
@@ -226,7 +326,14 @@ class RTGTutorialService:
             "max_return_amount": amount_received,
         }
 
-    def start_session(self, user_id: str) -> dict[str, Any]:
+    def start_session(self, user_id: str, replace_completed: bool = False) -> dict[str, Any]:
+        prepare_for_new_session(
+            self.db,
+            RTG_TUTORIAL_SESSIONS,
+            (RTG_TUTORIAL_TRIALS,),
+            user_id,
+            replace_completed,
+        )
         session_id = build_session_id("rtg_tutorial")
         session_data = {
             "session_id": session_id,
@@ -406,11 +513,15 @@ class RTGTutorialService:
             .where("user_id", "==", user_id)
             .stream()
         )
-        candidates = [
-            doc.to_dict()
-            for doc in docs
-            if doc.to_dict().get("tutorial_completed") and doc.to_dict().get("comprehension_check_passed")
-        ]
+        candidates = []
+        for doc in docs:
+            session = doc.to_dict()
+            if (
+                session.get("tutorial_completed")
+                and session.get("comprehension_check_passed")
+                and not is_invalidated_session(session)
+            ):
+                candidates.append(session)
         if not candidates:
             return None
         return sorted(candidates, key=lambda item: item.get("updated_at", utcnow()), reverse=True)[0]
@@ -527,13 +638,21 @@ class RTGSessionService:
             ],
         }
 
-    def start_session(self, user_id: str) -> dict[str, Any]:
+    def start_session(self, user_id: str, replace_completed: bool = False) -> dict[str, Any]:
         tutorial_session = self.tutorial_service.latest_passed_session(user_id)
         if tutorial_session is None:
             raise HTTPException(
                 status_code=400,
                 detail="RTG tutorial and comprehension check must be completed before the main task.",
             )
+
+        prepare_for_new_session(
+            self.db,
+            RTG_SESSIONS,
+            (RTG_TRIALS, RTG_POST_BLOCKS),
+            user_id,
+            replace_completed,
+        )
 
         session_id = build_session_id("rtg")
         session_data = {
@@ -737,7 +856,11 @@ class RTGSessionService:
 
 def latest_completed_session(db, collection_name: str, user_id: str) -> dict[str, Any] | None:
     docs = list(db.collection(collection_name).where("user_id", "==", user_id).stream())
-    completed_docs = [doc.to_dict() for doc in docs if doc.to_dict().get("completed")]
+    completed_docs = []
+    for doc in docs:
+        session = doc.to_dict()
+        if is_valid_completed_session(session, collection_name):
+            completed_docs.append(session)
     if not completed_docs:
         return None
     return sorted(completed_docs, key=lambda item: item.get("updated_at", utcnow()), reverse=True)[0]

@@ -1,25 +1,63 @@
 {
-  "displayOrder": ["demographic.json", "pcl-k-5.json", "bdi.json", "bai.json"],
+  "displayOrder": [
+    "demographic.json",
+    "phq-9.json",
+    "gad-7.json",
+    "pbi-father.json",
+    "pbi-mother.json",
+    "ecr-r.json",
+    "sias.json",
+    "bfne.json"
+  ],
   "questionnaires": {
     "demographic.json": {
       "key": "demographic",
       "name": "인구학적 정보",
       "stage": "demographic"
     },
-    "pcl-k-5.json": {
-      "key": "pcl_k5",
-      "name": "PTSD 척도",
+    "phq-9.json": {
+      "key": "phq_9",
+      "name": "우울 척도 (PHQ-9)",
       "stage": "followup"
+    },
+    "gad-7.json": {
+      "key": "gad_7",
+      "name": "불안 척도 (GAD-7)",
+      "stage": "followup"
+    },
+    "pbi-father.json": {
+      "key": "pbi_father",
+      "name": "부모 유대 척도 (PBI) - 아버지",
+      "stage": "followup"
+    },
+    "pbi-mother.json": {
+      "key": "pbi_mother",
+      "name": "부모 유대 척도 (PBI) - 어머니",
+      "stage": "followup"
+    },
+    "ecr-r.json": {
+      "key": "ecr_r",
+      "name": "성인 애착 척도 (ECR-R)",
+      "stage": "followup"
+    },
+    "sias.json": {
+      "key": "sias",
+      "name": "사회적 상호작용 불안 척도 (SIAS)",
+      "stage": "followup"
+    },
+    "bfne.json": {
+      "key": "bfne",
+      "name": "부정적 평가에 대한 두려움 척도 (BFNE)",
+      "stage": "followup"
+    },
+    "pcl-k-5.json": {
+      "enabled": false
     },
     "bdi.json": {
-      "key": "bdi",
-      "name": "벡 우울증 척도",
-      "stage": "followup"
+      "enabled": false
     },
     "bai.json": {
-      "key": "bai",
-      "name": "벡 불안 척도",
-      "stage": "followup"
+      "enabled": false
     }
   }
 }

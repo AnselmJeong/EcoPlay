@@ -1,0 +1,54 @@
+{
+  "title": "부모 유대 척도 (PBI) - 어머니",
+  "pages": [
+    {
+      "name": "pbi_mother",
+      "title": "부모 유대 척도 (PBI) - 어머니",
+      "description": "자신이 자라온 과정에서 어머니가 보인 태도와 행동을 떠올리며 각 문항에 답해 주십시오.",
+      "elements": [
+        {
+          "type": "matrix",
+          "name": "pbi_mother",
+          "title": "어머니에 대해 가장 잘 맞는 응답을 선택해 주십시오.",
+          "columns": [
+            { "value": 3, "text": "매우 그렇다" },
+            { "value": 2, "text": "대체로 그렇다" },
+            { "value": 1, "text": "대체로 아니다" },
+            { "value": 0, "text": "전혀 아니다" }
+          ],
+          "rows": [
+            { "value": "pbi_mother_01", "text": "나에게 따뜻하고 친근한 목소리로 말씀하셨다." },
+            { "value": "pbi_mother_02", "text": "내가 필요할 때 충분히 도와주지 않으셨다." },
+            { "value": "pbi_mother_03", "text": "내가 좋아하는 것들을 하도록 허락해 주셨다." },
+            { "value": "pbi_mother_04", "text": "나에게 정서적으로 냉담하셨다." },
+            { "value": "pbi_mother_05", "text": "나의 문제와 걱정을 이해해 주시는 것 같았다." },
+            { "value": "pbi_mother_06", "text": "나에게 애정을 표현해 주셨다." },
+            { "value": "pbi_mother_07", "text": "내가 스스로 결정하는 것을 좋아하셨다." },
+            { "value": "pbi_mother_08", "text": "내가 커가는 것을 원하지 않으시는 것 같았다." },
+            { "value": "pbi_mother_09", "text": "내가 하는 모든 것을 통제하려 하셨다." },
+            { "value": "pbi_mother_10", "text": "나의 사생활을 침해하셨다." },
+            { "value": "pbi_mother_11", "text": "나와 이야기 나누는 것을 즐기셨다." },
+            { "value": "pbi_mother_12", "text": "나에게 자주 미소 지어 주셨다." },
+            { "value": "pbi_mother_13", "text": "나를 어린아이 취급하는 경향이 있으셨다." },
+            { "value": "pbi_mother_14", "text": "내가 무엇을 필요로 하고 원하는지 이해하지 못하시는 것 같았다." },
+            { "value": "pbi_mother_15", "text": "내가 스스로 결정하도록 내버려 두셨다." },
+            { "value": "pbi_mother_16", "text": "나를 원하지 않는다는 느낌을 갖게 하셨다." },
+            { "value": "pbi_mother_17", "text": "내가 속상할 때 기분이 나아지게 해주실 수 있었다." },
+            { "value": "pbi_mother_18", "text": "나와 별로 이야기하지 않으셨다." },
+            { "value": "pbi_mother_19", "text": "나를 의존적으로 만들려 하셨다." },
+            { "value": "pbi_mother_20", "text": "부모님 없이는 내 스스로 잘 돌볼 수 없다는 느낌을 갖게 하셨다." },
+            { "value": "pbi_mother_21", "text": "내가 원하는 만큼 자유를 주셨다." },
+            { "value": "pbi_mother_22", "text": "내가 원하는 만큼 자주 외출할 수 있게 해주셨다." },
+            { "value": "pbi_mother_23", "text": "나를 과잉보호하셨다." },
+            { "value": "pbi_mother_24", "text": "나를 칭찬하지 않으셨다." },
+            { "value": "pbi_mother_25", "text": "내가 원하는 옷을 입도록 허락해 주셨다." }
+          ],
+          "isAllRowRequired": true
+        }
+      ]
+    }
+  ],
+  "questionErrorLocation": "bottom",
+  "showQuestionNumbers": "off",
+  "showCompletedPage": false
+}

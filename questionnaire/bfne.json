@@ -1,0 +1,42 @@
+{
+  "title": "부정적 평가에 대한 두려움 척도 (BFNE)",
+  "pages": [
+    {
+      "name": "bfne",
+      "title": "부정적 평가에 대한 두려움 척도 (BFNE)",
+      "description": "다음 문항들은 사회적 상황에서 느낄 수 있는 생각과 감정에 대한 것입니다. 각 문항을 주의 깊게 읽으시고 자신에게 해당되는 정도를 선택해 주십시오.",
+      "elements": [
+        {
+          "type": "matrix",
+          "name": "bfne",
+          "title": "자신에게 해당되는 정도를 표시해 주십시오.",
+          "columns": [
+            { "value": 1, "text": "전혀 그렇지 않다" },
+            { "value": 2, "text": "대체로 그렇지 않다" },
+            { "value": 3, "text": "보통이다" },
+            { "value": 4, "text": "대체로 그렇다" },
+            { "value": 5, "text": "매우 그렇다" }
+          ],
+          "rows": [
+            { "value": "bfne_01", "text": "사람들이 나를 어떻게 생각하는가가 중요하지 않다는 것을 알면서도 걱정된다." },
+            { "value": "bfne_02", "text": "사람들이 나에 대해 좋지 않은 인상을 갖고 있다는 것을 알아도 별로 개의치 않는다." },
+            { "value": "bfne_03", "text": "사람들이 나의 결점을 알아차릴까봐 자주 걱정된다." },
+            { "value": "bfne_04", "text": "다른 사람에게 내가 어떤 인상을 주는가에 대해 거의 염려하지 않는다." },
+            { "value": "bfne_05", "text": "사람들이 나를 인정해 주지 않을 것 같아 걱정된다." },
+            { "value": "bfne_06", "text": "사람들이 나의 결점을 찾아 낼 것 같아 걱정된다." },
+            { "value": "bfne_07", "text": "나에 대한 다른 사람의 평가에 신경쓰지 않는다." },
+            { "value": "bfne_08", "text": "누군가와 얘기할 때 그가 나에 대해 어떤 생각을 하고 있을지 염려된다." },
+            { "value": "bfne_09", "text": "내가 어떤 인상을 주는지에 대해 대개 걱정된다." },
+            { "value": "bfne_10", "text": "누군가 나를 평가하는 것을 알아도 이로 인해 영향받지 않는다." },
+            { "value": "bfne_11", "text": "다른 사람이 나를 어떻게 생각하는지에 대해 때때로 지나치게 염려한다." },
+            { "value": "bfne_12", "text": "말을 실수하거나 일을 잘 못할까봐 종종 걱정된다." }
+          ],
+          "isAllRowRequired": true
+        }
+      ]
+    }
+  ],
+  "questionErrorLocation": "bottom",
+  "showQuestionNumbers": "off",
+  "showCompletedPage": false
+}

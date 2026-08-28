@@ -1,0 +1,38 @@
+{
+  "title": "정신건강검사 평가도구 (PHQ-9)",
+  "description": "본 설문은 우울한 정도를 스스로 알아보기 위한 것입니다. 이 질문들이 확정된 진단을 위한 것은 아니지만 높은 점수가 나왔을 경우에는 우울증의 가능성이 높으므로, 더 정확한 평가를 위해 병원에서 진료를 받아볼 것을 추천합니다.",
+  "pages": [
+    {
+      "name": "phq_9",
+      "title": "한글판 Patient Health Questionnaire-9: PHQ-9",
+      "elements": [
+        {
+          "type": "matrix",
+          "name": "phq_9",
+          "title": "지난 2주 동안, 아래 나열되는 증상들에 얼마나 자주 시달렸습니까?",
+          "columns": [
+            { "value": 0, "text": "전혀 아니다" },
+            { "value": 1, "text": "여러 날 동안" },
+            { "value": 2, "text": "일주일 이상" },
+            { "value": 3, "text": "거의 매일" }
+          ],
+          "rows": [
+            { "value": "phq_9_01", "text": "일을 하는 것에 대한 흥미나 재미가 거의 없음" },
+            { "value": "phq_9_02", "text": "가라앉은 느낌, 우울감 혹은 절망감" },
+            { "value": "phq_9_03", "text": "잠들기 어렵거나 자꾸 깨어남, 혹은 너무 많이 잠" },
+            { "value": "phq_9_04", "text": "피곤함, 기력이 저하됨" },
+            { "value": "phq_9_05", "text": "식욕 저하 혹은 과식" },
+            { "value": "phq_9_06", "text": "내 자신이 나쁜 사람이라는 느낌 혹은 내 자신을 실패자라고 느끼거나 나 때문에 나 자신이나 내 가족이 불행하게 되었다는 느낌" },
+            { "value": "phq_9_07", "text": "신문을 읽거나 TV를 볼 때 집중하기 어려움" },
+            { "value": "phq_9_08", "text": "남들이 알아챌 정도로 거동이나 말이 느림, 또는 반대로 너무 초조하고 안절부절 못해서 평소보다 많이 돌아다니고 서성거림" },
+            { "value": "phq_9_09", "text": "나는 차라리 죽는 것이 낫겠다는 등의 생각 혹은 어떤 식으로든 스스로를 자해하는 생각들" }
+          ],
+          "isAllRowRequired": true
+        }
+      ]
+    }
+  ],
+  "questionErrorLocation": "bottom",
+  "showQuestionNumbers": "off",
+  "showCompletedPage": false
+}

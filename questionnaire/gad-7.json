@@ -1,0 +1,35 @@
+{
+  "title": "불안 척도 (GAD-7)",
+  "pages": [
+    {
+      "name": "gad_7",
+      "title": "불안 척도 (GAD-7) 평가",
+      "elements": [
+        {
+          "type": "matrix",
+          "name": "gad_7",
+          "title": "지난 2주일 동안 귀하에게 얼마나 자주 일어났는지 체크하도록 합니다.",
+          "columns": [
+            { "value": 0, "text": "전혀 그렇지 않다" },
+            { "value": 1, "text": "며칠 동안 방해 받았다" },
+            { "value": 2, "text": "2주 중 절반 이상 방해 받았다" },
+            { "value": 3, "text": "거의 매일 방해 받았다" }
+          ],
+          "rows": [
+            { "value": "gad_7_01", "text": "초조하거나 불안하거나 조마조마하게 느낀다." },
+            { "value": "gad_7_02", "text": "걱정하는 것을 멈추거나 조절할 수가 없다." },
+            { "value": "gad_7_03", "text": "여러 가지 것들에 대해 걱정을 너무 많이 한다." },
+            { "value": "gad_7_04", "text": "편하게 있기가 어렵다." },
+            { "value": "gad_7_05", "text": "너무 안절부절하며 가만히 있기 힘들다." },
+            { "value": "gad_7_06", "text": "쉽사리 짜증이 나고 화를 내게 된다." },
+            { "value": "gad_7_07", "text": "마치 끔찍한 일이 생길 것처럼 두렵게 느껴진다." }
+          ],
+          "isAllRowRequired": true
+        }
+      ]
+    }
+  ],
+  "questionErrorLocation": "bottom",
+  "showQuestionNumbers": "off",
+  "showCompletedPage": false
+}

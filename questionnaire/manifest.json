@@ -1,13 +1,13 @@
 {
   "displayOrder": [
     "demographic.json",
-    "phq-9.json",
-    "gad-7.json",
-    "pbi-father.json",
     "pbi-mother.json",
+    "pbi-father.json",
     "ecr-r.json",
     "sias.json",
-    "bfne.json"
+    "bfne.json",
+    "phq-9.json",
+    "gad-7.json"
   ],
   "questionnaires": {
     "demographic.json": {

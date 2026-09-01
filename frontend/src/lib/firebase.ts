@@ -15,18 +15,16 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-const missingFirebaseConfig = Object.entries(requiredFirebaseConfig)
-  .filter(([, value]) => !value)
-  .map(([key]) => key);
+const hasExplicitFirebaseConfig = Object.values(requiredFirebaseConfig).every(Boolean);
 
-if (missingFirebaseConfig.length > 0) {
-  throw new Error(
-    `Firebase config is missing required values: ${missingFirebaseConfig.join(', ')}`
-  );
-}
-
-// Firebase 앱 초기화
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// Firebase App Hosting injects FIREBASE_WEBAPP_CONFIG during the build and
+// exposes it as the SDK's default configuration. Explicit NEXT_PUBLIC values
+// remain supported for local development and non-App Hosting environments.
+const app = getApps().length > 0
+  ? getApp()
+  : hasExplicitFirebaseConfig
+    ? initializeApp(firebaseConfig)
+    : initializeApp();
 
 // Firestore access is intentionally handled by the authenticated backend only.
 export const auth: Auth | null = typeof window !== 'undefined' ? getAuth(app) : null;

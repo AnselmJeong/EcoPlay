@@ -4,3 +4,10 @@ runConfig:
   concurrency: 40
   cpu: 1
   memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_API_URL
+    value: https://ecoplay-api-l7qtkgb7mq-du.a.run.app
+    availability:
+      - BUILD
+      - RUNTIME

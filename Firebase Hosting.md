@@ -103,7 +103,7 @@ NEXT_PUBLIC_API_URL=https://Cloud-Run-주소
 - questionnaire/consent API의 participant ownership 검사
 - 공개 회원가입을 제거하거나 임의의 연구 참여 코드로 교체
 
-이 준비가 완료되고 GitHub `main` 브랜치에 push된 다음 콘솔 작업을 시작하는 편이 안전합니다.
+이 준비가 완료되고 App Hosting live branch인 GitHub `slim` 브랜치에 push된 다음 콘솔 작업을 시작하는 편이 안전합니다.
 
 코드 준비 상태는 저장소 루트에서 다음 명령으로 한 번에 검증할 수 있습니다.
 
@@ -291,7 +291,7 @@ EcoPlay는 frontend와 backend가 하나의 저장소에 들어 있으므로 다
 
 ```
 Root directory: /frontend
-Live branch: main
+Live branch: slim
 Automatic rollouts: Enabled
 ```
 
@@ -317,7 +317,7 @@ Firebase Web App을 선택하라는 화면이 나오면 기존 EcoPlay Web App�
 https://ecoplay-web--ecoplay-6fd53.asia-east1.hosted.app
 ```
 
-App Hosting은 GitHub의 `main` 브랜치에 새 commit이 push될 때마다 자동 배포합니다. [Firebase App Hosting 시작 안내](https://firebase.google.com/docs/app-hosting/get-started)
+App Hosting은 GitHub의 `slim` 브랜치에 새 commit이 push될 때마다 자동 배포합니다. [Firebase App Hosting 시작 안내](https://firebase.google.com/docs/app-hosting/get-started)
 
 ------
 

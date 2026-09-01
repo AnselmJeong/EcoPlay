@@ -163,9 +163,8 @@
   --radius: .95rem;
 }
 
-/* Keep the active questionnaire choice in the primary viewport area.
-   The bundled matrix renderer uses 14vh of vertical padding on both sides,
-   which pushes the first interactive row below the fold on desktop screens. */
+/* Keep the progress treatment aligned with the host app. Matrix spacing and
+   edge scrolling are handled by questionnaire-js itself. */
 .questionnaire-wrapper .questionnaire-js {
   position: relative;
   padding-bottom: 1.75rem;
@@ -193,10 +192,6 @@
   line-height: 1.55 !important;
   letter-spacing: -0.025em !important;
   text-transform: none !important;
-}
-
-.questionnaire-wrapper .matrix-carousel__viewport > div {
-  padding-block: clamp(1rem, 3vh, 2rem);
 }
 
 /* Progress is secondary navigation feedback, so keep it below the response

@@ -6,6 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
+    "prebuild": "node scripts/prepare-questionnaires.mjs",
     "dev": "next dev --turbopack -p 9000",
     "build": "next build",
     "start": "next start",

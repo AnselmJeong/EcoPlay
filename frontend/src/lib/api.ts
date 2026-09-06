@@ -268,6 +268,7 @@ export const rtgTutorialAPI = {
 };
 
 export const rtgAPI = {
+  getAccess: async () => apiCall<{ allowed: boolean }>('/game/rtg/access', { cache: 'no-store' }),
   startSession: async (options: StartSessionOptions = {}) =>
     apiCall<SessionStartResponse>('/game/rtg/start-session', {
       method: 'POST',

@@ -36,6 +36,10 @@ class SessionStartRequest(BaseModel):
     replace_completed: bool = False
 
 
+class RTGAccessResponse(BaseModel):
+    allowed: bool
+
+
 class RTGTutorialSubmitTrialRequest(BaseModel):
     session_id: str
     return_amount: int = Field(ge=0)

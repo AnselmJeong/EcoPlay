@@ -16,7 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { RTGPostBlockResponse, RTGSubmitTrialResponse, SessionState, rtgAPI } from '@/lib/api';
+import { useRTGAccess } from '@/hooks/use-rtg-access';
+import { ApiError, RTGPostBlockResponse, RTGSubmitTrialResponse, SessionState, rtgAPI } from '@/lib/api';
 import { startSessionWithRestartConfirmation } from '@/lib/start-session';
 
 type PartnerClassification = 'high_return' | 'low_return' | 'unpredictable';
@@ -736,6 +737,35 @@ function PostBlockPanel({
 }
 
 export default function RTGMainPage() {
+  const { status, refresh } = useRTGAccess();
+
+  if (status === 'allowed') return <RTGMainGame onAccessRevoked={refresh} />;
+
+  return (
+    <div className="container mx-auto max-w-2xl px-4 py-12" lang="ko">
+      <Card>
+        <CardHeader>
+          <CardTitle>신뢰 게임 본실험</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p role="status" className="leading-7 text-foreground/80">
+            {status === 'checking'
+              ? '튜토리얼 완료 여부를 확인하고 있습니다.'
+              : status === 'blocked'
+                ? '튜토리얼의 모든 연습과 이해도 점검을 통과해야 본실험에 참여할 수 있습니다.'
+                : '튜토리얼 완료 여부를 확인하지 못했습니다. 연결과 로그인 상태를 확인한 뒤 다시 시도해 주세요.'}
+          </p>
+        </CardContent>
+        <CardFooter className="flex flex-wrap gap-3">
+          <Button asChild><Link href="/trust-game/tutorial">튜토리얼로 이동</Link></Button>
+          {status !== 'checking' && <Button variant="outline" onClick={refresh}>완료 여부 다시 확인</Button>}
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+function RTGMainGame({ onAccessRevoked }: { onAccessRevoked: () => void }) {
   const [session, setSession] = useState<SessionState | null>(null);
   const [amountSent, setAmountSent] = useState<number[]>([0]);
   const [classification, setClassification] = useState<PartnerClassification>('high_return');
@@ -773,6 +803,7 @@ export default function RTGMainPage() {
       setLastTrial(null);
       setLastPostBlock(null);
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'tutorial_required') onAccessRevoked();
       toast({
         title: '본실험 시작 실패',
         description: error instanceof Error ? error.message : 'RTG 본실험을 시작하지 못했습니다.',
@@ -801,6 +832,7 @@ export default function RTGMainPage() {
         description: `${formatPoints(response.trial.partner_return_amount)}점을 돌려받았습니다.`,
       });
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'tutorial_required') onAccessRevoked();
       toast({
         title: '제출 실패',
         description: error instanceof Error ? error.message : 'RTG trial 제출에 실패했습니다.',
@@ -842,6 +874,7 @@ export default function RTGMainPage() {
         description: response.completed ? 'RTG 본실험이 완료되었습니다.' : '다음 파트너 block으로 이동합니다.',
       });
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'tutorial_required') onAccessRevoked();
       toast({
         title: 'Post-block 저장 실패',
         description: error instanceof Error ? error.message : 'Post-block 응답 저장에 실패했습니다.',

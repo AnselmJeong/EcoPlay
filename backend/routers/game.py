@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from core.auth import extract_medical_record_number, get_current_user_optional
 from core.firebase import get_firestore_client
 from schemas.game import (
+    RTGAccessResponse,
     RTGPostBlockRequest,
     RTGPostBlockResponse,
     RTGSubmitTrialRequest,
@@ -83,6 +84,13 @@ async def submit_rtg_tutorial_comprehension(
         return_basis_answer=request.return_basis_answer,
         repeated_interaction_answer=request.repeated_interaction_answer,
     )
+
+
+@router.get("/rtg/access", response_model=RTGAccessResponse)
+async def get_rtg_access(current_user=Depends(get_current_user_optional)):
+    service = RTGTutorialService(get_firestore_client())
+    user_id = extract_medical_record_number(current_user)
+    return {"allowed": service.latest_passed_session(user_id) is not None}
 
 
 @router.post("/rtg/start-session", response_model=SessionStartResponse)

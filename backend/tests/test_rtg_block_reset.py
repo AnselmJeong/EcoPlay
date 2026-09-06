@@ -1,52 +1,7 @@
 import unittest
 
-from services.game_sessions import RTG_POST_BLOCKS, RTG_SESSIONS, RTGSessionService
-
-
-class FakeDocumentSnapshot:
-    def __init__(self, document_id: str, data: dict):
-        self.id = document_id
-        self._data = data
-        self.exists = True
-
-    def to_dict(self) -> dict:
-        return dict(self._data)
-
-
-class FakeDocumentReference:
-    def __init__(self, document_id: str, data: dict):
-        self.id = document_id
-        self._data = data
-
-    def get(self) -> FakeDocumentSnapshot:
-        return FakeDocumentSnapshot(self.id, self._data)
-
-    def update(self, updates: dict) -> None:
-        self._data.update(updates)
-
-
-class FakeCollection:
-    def __init__(self, documents: dict[str, dict] | None = None):
-        self.documents = documents or {}
-        self.added: list[dict] = []
-
-    def document(self, document_id: str) -> FakeDocumentReference:
-        return FakeDocumentReference(document_id, self.documents[document_id])
-
-    def add(self, data: dict):
-        self.added.append(dict(data))
-        return None, FakeDocumentReference(f"added-{len(self.added)}", self.added[-1])
-
-
-class FakeFirestore:
-    def __init__(self, session: dict):
-        self.collections = {
-            RTG_SESSIONS: FakeCollection({session["session_id"]: session}),
-            RTG_POST_BLOCKS: FakeCollection(),
-        }
-
-    def collection(self, name: str) -> FakeCollection:
-        return self.collections[name]
+from services.game_sessions import RTG_SESSIONS, RTG_TUTORIAL_SESSIONS, RTGSessionService
+from test_session_replacement import FakeFirestore
 
 
 class RTGBlockResetTest(unittest.TestCase):
@@ -78,7 +33,17 @@ class RTGBlockResetTest(unittest.TestCase):
             "status": "awaiting_post_block",
             "completed": False,
         }
-        db = FakeFirestore(session)
+        db = FakeFirestore({
+            RTG_SESSIONS: {session["session_id"]: session},
+            RTG_TUTORIAL_SESSIONS: {
+                "passed-tutorial": {
+                    "user_id": "participant-1",
+                    "tutorial_completed": True,
+                    "comprehension_check_passed": True,
+                    "completed_trials_count": 10,
+                },
+            },
+        })
         service = RTGSessionService(db)
 
         response = service.submit_post_block(

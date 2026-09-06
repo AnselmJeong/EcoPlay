@@ -75,6 +75,11 @@ class FakeCollection(FakeQuery):
     def document(self, document_id: str) -> FakeDocumentReference:
         return FakeDocumentReference(self, document_id)
 
+    def add(self, data: dict):
+        reference = self.document(f"added-{len(self.documents) + 1}")
+        reference.set(data)
+        return None, reference
+
 
 class FakeFirestore:
     def __init__(self, collections: dict[str, dict[str, dict]]):

@@ -460,7 +460,10 @@ class RTGTutorialService:
         session = get_document_or_404(session_ref, "RTG tutorial session not found.")
         if session["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="This session belongs to another user.")
-        if not session["tutorial_completed"]:
+        if (
+            not session["tutorial_completed"]
+            or session.get("completed_trials_count", 0) < self.config.tutorial.trials
+        ):
             raise HTTPException(status_code=400, detail="Tutorial must be completed first.")
 
         feedback = [
@@ -519,6 +522,7 @@ class RTGTutorialService:
             if (
                 session.get("tutorial_completed")
                 and session.get("comprehension_check_passed")
+                and session.get("completed_trials_count", 0) >= self.config.tutorial.trials
                 and not is_invalidated_session(session)
             ):
                 candidates.append(session)
@@ -532,6 +536,18 @@ class RTGSessionService:
         self.db = db
         self.config = get_game_config()
         self.tutorial_service = RTGTutorialService(db)
+
+    def require_completed_tutorial(self, user_id: str) -> dict[str, Any]:
+        tutorial_session = self.tutorial_service.latest_passed_session(user_id)
+        if tutorial_session is None:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "tutorial_required",
+                    "message": "튜토리얼의 모든 연습과 이해도 점검을 통과해야 본실험에 참여할 수 있습니다.",
+                },
+            )
+        return tutorial_session
 
     def _hydrate_legacy_balances(self, session_ref, session: dict[str, Any]) -> dict[str, Any]:
         if "current_balance" in session and "current_partner_balance" in session:
@@ -639,12 +655,7 @@ class RTGSessionService:
         }
 
     def start_session(self, user_id: str, replace_completed: bool = False) -> dict[str, Any]:
-        tutorial_session = self.tutorial_service.latest_passed_session(user_id)
-        if tutorial_session is None:
-            raise HTTPException(
-                status_code=400,
-                detail="RTG tutorial and comprehension check must be completed before the main task.",
-            )
+        tutorial_session = self.require_completed_tutorial(user_id)
 
         prepare_for_new_session(
             self.db,
@@ -681,6 +692,7 @@ class RTGSessionService:
         session = get_document_or_404(session_ref, "RTG session not found.")
         if session["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="This session belongs to another user.")
+        self.require_completed_tutorial(user_id)
         session = self._hydrate_legacy_balances(session_ref, session)
         return self._session_payload(session)
 
@@ -695,6 +707,7 @@ class RTGSessionService:
         session = get_document_or_404(session_ref, "RTG session not found.")
         if session["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="This session belongs to another user.")
+        self.require_completed_tutorial(user_id)
         session = self._hydrate_legacy_balances(session_ref, session)
         if session["completed"] or session["status"] != "in_progress":
             raise HTTPException(status_code=400, detail="RTG session is not ready for a trial submission.")
@@ -800,6 +813,7 @@ class RTGSessionService:
         session = get_document_or_404(session_ref, "RTG session not found.")
         if session["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="This session belongs to another user.")
+        self.require_completed_tutorial(user_id)
         session = self._hydrate_legacy_balances(session_ref, session)
         if session["status"] != "awaiting_post_block":
             raise HTTPException(status_code=400, detail="This session is not waiting for a post-block response.")

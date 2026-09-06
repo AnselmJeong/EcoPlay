@@ -37,6 +37,10 @@ class SessionStartRequest(BaseModel):
     replace_completed: bool = False
 
 
+class RTGAccessResponse(BaseModel):
+    allowed: bool
+
+
 class PublicGoodsSubmitTrialRequest(BaseModel):
     session_id: str
     contribution: float = Field(ge=0)

@@ -11,3 +11,34 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # Public Firebase web config, matching the local Web App settings.
+  # Pin these at build time instead of using App Hosting automatic SDK defaults.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyBsE_p2_2SUQ4zC9McnmSj1peFh-xjMmM0"
+    availability:
+      - BUILD
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "ecoplay-6fd53.firebaseapp.com"
+    availability:
+      - BUILD
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "ecoplay-6fd53"
+    availability:
+      - BUILD
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "ecoplay-6fd53.firebasestorage.app"
+    availability:
+      - BUILD
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "749750779389"
+    availability:
+      - BUILD
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:749750779389:web:4e22e51355ba406eba2d94"
+    availability:
+      - BUILD
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-EECZSW4CRR"
+    availability:
+      - BUILD

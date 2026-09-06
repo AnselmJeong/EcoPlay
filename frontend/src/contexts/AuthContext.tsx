@@ -77,7 +77,7 @@ function mapFirebaseAuthError(error: unknown): Error {
     case 'auth/api-key-expired':
     case 'auth/invalid-api-key':
       return new Error(
-        'Firebase 인증 설정의 API 키가 만료되었거나 잘못되었습니다. Firebase Console의 웹 앱 설정값으로 NEXT_PUBLIC_FIREBASE_API_KEY를 갱신하고 개발 서버를 다시 시작해주세요.'
+        'Firebase 인증 설정의 API 키가 만료되었거나 잘못되었습니다. 관리자에게 문의해주세요. 관리자는 빌드 환경의 NEXT_PUBLIC_FIREBASE_API_KEY를 갱신한 뒤 앱을 다시 빌드·배포해야 합니다.'
       );
     case 'auth/app-not-authorized':
       return new Error(

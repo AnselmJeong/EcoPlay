@@ -323,6 +323,22 @@ App Hosting은 GitHub의 `slim` 브랜치에 새 commit이 push될 때마다 자
 
 # 5단계: App Hosting 환경 변수 설정
 
+현재 `frontend/apphosting.yaml`에는 Cloud Run API 주소와 Firebase Web App의
+`NEXT_PUBLIC_FIREBASE_*` 값이 명시되어 있습니다. Firebase 값은 **BUILD** 단계에
+제공되며, 변경한 값을 운영 브라우저에 적용하려면 새 빌드와 rollout이 필요합니다.
+Console에 같은 이름의 변수가 있으면 YAML보다 우선하므로 함께 확인하세요.
+
+`frontend/secret/key.tsx`는 참고용 파일이며 앱에서 import하지 않습니다.
+이 파일과 `frontend/.env.local`은 Git에서 제외되어 GitHub 기반 배포에 전달되지
+않습니다. 키를 변경할 때는 로컬 `.env.local`과 배포 `apphosting.yaml`의 값을
+함께 갱신해야 합니다. 필수 설정이 빠지면 앱 초기화가 실패하도록 되어 있습니다.
+
+2026-09-06 운영 장애에서는 App Hosting이 자동 주입한 기본 설정에 만료된 키
+(`…U-Rceg`)가 포함되어 있었습니다. 명시적 환경변수가 없어 `initializeApp()`이
+이 기본값을 선택했고, Google Authentication이 `API key expired`를 반환했습니다.
+로컬 설정의 키(`…xjMmM0`)는 같은 프로젝트의 인증 설정 조회에 정상 응답했습니다.
+이제 앱은 자동 기본값으로 전환하지 않고 명시된 설정만 사용합니다.
+
 초기 배포가 실패했거나 Firebase/API 연결이 되지 않는다면 환경 변수가 없는 경우가 가장 많습니다.
 
 1. Firebase Console에서 **Hosting & Serverless → App Hosting**으로 이동합니다.
@@ -391,6 +407,19 @@ https://ecoplay-web--ecoplay-6fd53.asia-east1.hosted.app/
 ------
 
 # 7단계: Cloud Run CORS에 App Hosting 주소 추가
+
+2026-09-06 운영 점검에서 기본 `hosted.app` 도메인의 preflight는 성공했지만,
+`https://trust.ecoplay.cloud`는 `400 Disallowed CORS origin`으로 거부되었습니다.
+현재 custom domain을 사용하려면 Cloud Shell에서 다음과 같이 기존 기본 도메인과
+custom domain을 함께 허용해야 합니다. 이 명령은 다른 환경변수를 유지하며,
+실행하면 새 Cloud Run revision이 배포됩니다.
+
+```bash
+gcloud run services update ecoplay-api \
+  --project ecoplay-6fd53 \
+  --region asia-northeast3 \
+  --update-env-vars '^@^CORS_ORIGINS=https://ecoplay-web--ecoplay-6fd53.asia-east1.hosted.app,https://trust.ecoplay.cloud'
+```
 
 코드가 환경 변수 기반 CORS를 지원하도록 준비된 후 진행합니다.
 

@@ -9,6 +9,7 @@ import { ArrowLeft, Check, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { consentAPI } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { ResearchDocuments } from './research-documents';
 
 export default function ConsentPage() {
   const [agreements, setAgreements] = useState({
@@ -86,7 +87,7 @@ export default function ConsentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 py-8">
+    <div lang="ko" className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 py-8">
       <div className="container mx-auto px-6 max-w-4xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -102,54 +103,16 @@ export default function ConsentPage() {
 
         <Card className="shadow-xl border-2 border-blue-200">
           <CardHeader className="bg-blue-50 border-b border-blue-200">
-            <CardTitle className="text-2xl md:text-3xl font-bold text-blue-800 text-center">
-              연구 참여 동의서
+            <CardTitle className="text-2xl md:text-3xl font-bold leading-snug break-keep text-blue-800 text-center">
+              <h1>연구대상자용 설명문 및 동의서</h1>
             </CardTitle>
             <p className="text-center text-gray-600 mt-2">
-              신뢰 게임 연구 참여에 대한 동의서입니다
+              설명문과 동의서를 읽으신 후, 아래의 동의 항목을 확인해 주세요.
             </p>
           </CardHeader>
 
           <CardContent className="p-6 md:p-8 space-y-6">
-            {/* 연구 목적 */}
-            <div>
-              <h3 className="text-xl font-bold text-blue-800 mb-3">1. 연구의 목적</h3>
-              <div className="text-gray-700 space-y-2">
-                <p>본 연구는 대인관계에서의 신뢰 정도와 심리적 특성 간의 관계를 알아보기 위한 연구입니다.</p>
-                <p>귀하의 참여를 통해 얻어진 정보는 대인관계 어려움을 겪는 분들을 위한 심리적 개입 방법 개발에 도움이 될 것입니다.</p>
-              </div>
-            </div>
-
-            {/* 연구 절차 */}
-            <div>
-              <h3 className="text-xl font-bold text-blue-800 mb-3">2. 연구 절차</h3>
-              <div className="text-gray-700 space-y-2">
-                <p>• 간단한 신뢰 게임 참여 (약 10-15분)</p>
-                <p>• 심리적 특성에 관한 설문 작성 (약 5-10분)</p>
-                <p>• 총 소요시간: 약 20-25분</p>
-              </div>
-            </div>
-
-            {/* 개인정보 보호 */}
-            <div>
-              <h3 className="text-xl font-bold text-blue-800 mb-3">3. 개인정보 보호</h3>
-              <div className="text-gray-700 space-y-2">
-                <p>• 수집된 모든 자료는 연구 목적으로만 사용됩니다</p>
-                <p>• 개인을 식별할 수 있는 정보는 수집하지 않습니다</p>
-                <p>• 연구 결과 발표 시 개인정보는 완전히 익명처리됩니다</p>
-                <p>• 연구 자료는 연구 종료 후 안전하게 폐기됩니다</p>
-              </div>
-            </div>
-
-            {/* 참여자의 권리 */}
-            <div>
-              <h3 className="text-xl font-bold text-blue-800 mb-3">4. 참여자의 권리</h3>
-              <div className="text-gray-700 space-y-2">
-                <p>• 연구 참여는 완전히 자발적입니다</p>
-                <p>• 언제든지 참여를 중단할 수 있으며, 이로 인한 어떠한 불이익도 없습니다</p>
-                <p>• 연구 진행 중 불편함을 느끼시면 언제든 중단하실 수 있습니다</p>
-              </div>
-            </div>
+            <ResearchDocuments />
 
             {/* 동의 체크박스 */}
             <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
